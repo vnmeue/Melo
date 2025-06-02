@@ -1110,22 +1110,6 @@ fun HomeScreen(
                     ),
                 )
             }
-
-            HideOnScrollFAB(
-                visible =
-                    !quickPicks.isNullOrEmpty() || !forgottenFavorite.isNullOrEmpty() || explorePage?.newReleaseAlbums?.isNotEmpty() == true,
-                scrollState = scrollState,
-                icon = R.drawable.casino,
-                onClick = {
-                    if (Random.nextBoolean() && !quickPicks.isNullOrEmpty()) {
-                        val song = quickPicks!!.random()
-                        playerConnection.playQueue(YouTubeQueue(WatchEndpoint(videoId = song.id), song.toMediaMetadata()))
-                    } else if (explorePage?.newReleaseAlbums?.isNotEmpty() == true) {
-                        val album = explorePage?.newReleaseAlbums!!.random()
-                        playerConnection.playQueue(YouTubeAlbumRadio(album.playlistId))
-                    }
-                },
-            )
         }
     }
 }
