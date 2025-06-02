@@ -44,20 +44,6 @@ fun LibraryScreen(navController: NavController) {
                 },
                 modifier = Modifier.weight(1f),
             )
-            
-            NavigationTile(
-                title = stringResource(R.string.history),
-                icon = R.drawable.history,
-                onClick = { navController.navigate("history") },
-                modifier = Modifier.width(80.dp),
-            )
-
-            NavigationTile(
-                title = stringResource(R.string.stats),
-                icon = R.drawable.trending_up,
-                onClick = { navController.navigate("stats") },
-                modifier = Modifier.width(80.dp),
-            )
         }
     }
 
@@ -65,11 +51,11 @@ fun LibraryScreen(navController: NavController) {
         modifier = Modifier.fillMaxSize(),
     ) {
         when (filterType) {
-            LibraryFilter.LIBRARY -> LibraryMixScreen(navController, filterContent)
-            LibraryFilter.PLAYLISTS -> LibraryPlaylistsScreen(navController, filterContent)
-            LibraryFilter.SONGS -> LibrarySongsScreen(navController, { filterType = LibraryFilter.LIBRARY })
-            LibraryFilter.ALBUMS -> LibraryAlbumsScreen(navController, { filterType = LibraryFilter.LIBRARY })
-            LibraryFilter.ARTISTS -> LibraryArtistsScreen(navController, { filterType = LibraryFilter.LIBRARY })
+            LibraryFilter.LIBRARY -> LibraryMixScreen(navController = navController, filterContent = filterContent)
+            LibraryFilter.PLAYLISTS -> LibraryPlaylistsScreen(navController = navController, filterContent = filterContent)
+            LibraryFilter.SONGS -> LibrarySongsScreen(navController = navController, onDeselect = { filterType = LibraryFilter.LIBRARY })
+            LibraryFilter.ALBUMS -> LibraryAlbumsScreen(navController = navController, onDeselect = { filterType = LibraryFilter.LIBRARY })
+            LibraryFilter.ARTISTS -> LibraryArtistsScreen(navController = navController, onDeselect = { filterType = LibraryFilter.LIBRARY })
         }
     }
 }
