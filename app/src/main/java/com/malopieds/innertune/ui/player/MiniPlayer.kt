@@ -12,12 +12,15 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -42,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -67,53 +71,43 @@ private fun AnimatedProgressBar(
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val infiniteTransition = rememberInfiniteTransition(label = "progress")
-    val phase by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "phase"
-    )
+    val playerConnection = LocalPlayerConnection.current ?: return
 
-    Canvas(modifier = modifier) {
-        val width = size.width
-        val height = size.height
-        val progressWidth = width * progress
-
+    Box(
+        modifier = modifier
+            .height(6.dp)
+            .fillMaxWidth()
+            .padding(bottom = 4.dp)
+            .pointerInput(Unit) {
+                detectTapGestures { offset ->
+                    val percentage = offset.x / size.width
+                    val newPosition = (playerConnection.player.duration * percentage).toLong()
+                    playerConnection.player.seekTo(newPosition)
+                }
+            }
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures { change, dragAmount ->
+                    change.consume()
+                    val percentage = (change.position.x / size.width).coerceIn(0f, 1f)
+                    val newPosition = (playerConnection.player.duration * percentage).toLong()
+                    playerConnection.player.seekTo(newPosition)
+                }
+            }
+    ) {
         // Draw background
-        drawRect(
-            color = colorScheme.surfaceVariant.copy(alpha = 0.5f),
-            size = size
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colorScheme.surfaceVariant.copy(alpha = 0.5f))
         )
 
-        // Draw progress with squiggly effect
-        if (isPlaying) {
-            val path = Path()
-            path.moveTo(0f, height / 2)
-            
-            for (x in 0..progressWidth.toInt() step 10) {
-                val y = height / 2 + sin(x / 20f + phase * 2 * Math.PI).toFloat() * 2
-                path.lineTo(x.toFloat(), y)
-            }
-            
-            drawPath(
-                path = path,
-                color = colorScheme.primary,
-                style = Stroke(
-                    width = height,
-                    cap = StrokeCap.Round
-                )
-            )
-        } else {
-            // Draw straight progress when not playing
-            drawRect(
-                color = colorScheme.primary,
-                size = size.copy(width = progressWidth)
-            )
-        }
+        // Draw progress
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(progress)
+                .background(colorScheme.primary)
+        )
     }
 }
 
@@ -142,7 +136,6 @@ fun MiniPlayer(
             isPlaying = isPlaying,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(2.dp)
                 .align(Alignment.TopCenter)
         )
 

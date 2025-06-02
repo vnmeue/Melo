@@ -268,13 +268,6 @@ fun PlayerMenu(
             ),
     ) {
         GridMenuItem(
-            icon = R.drawable.radio,
-            title = R.string.start_radio,
-        ) {
-            playerConnection.playQueue(YouTubeQueue(WatchEndpoint(videoId = mediaMetadata.id), mediaMetadata))
-            onDismiss()
-        }
-        GridMenuItem(
             icon = R.drawable.playlist_add,
             title = R.string.add_to_playlist,
         ) {
