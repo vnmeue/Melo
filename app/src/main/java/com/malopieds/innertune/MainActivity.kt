@@ -336,11 +336,9 @@ class MainActivity : ComponentActivity() {
                     }
 
                     val shouldShowSearchBar =
-                        remember(active, navBackStackEntry) {
-                            active ||
-                                navigationItems.fastAny { it.route == navBackStackEntry?.destination?.route } ||
-                                navBackStackEntry?.destination?.route?.startsWith("search/") == true
-                        }
+                        navBackStackEntry?.destination?.route?.let { route ->
+                            navigationItems.fastAny { it.route == route }
+                        } == true && navBackStackEntry?.destination?.route != Screens.Home.route
                     val shouldShowNavigationBar =
                         remember(navBackStackEntry, active) {
                             navBackStackEntry?.destination?.route == null ||

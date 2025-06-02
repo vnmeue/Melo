@@ -41,7 +41,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
@@ -92,6 +91,13 @@ import com.malopieds.innertune.viewmodels.HomeViewModel
 import kotlin.random.Random
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.size
 
 @SuppressLint("UnrememberedMutableState")
 @Suppress("DEPRECATION")
@@ -182,11 +188,7 @@ fun HomeScreen(
                 modifier = Modifier.verticalScroll(scrollState),
             ) {
                 Spacer(
-                    Modifier.height(
-                        LocalPlayerAwareWindowInsets.current
-                            .asPaddingValues()
-                            .calculateTopPadding(),
-                    ),
+                    Modifier.height(46.dp)
                 )
 
                 if (quickPicks != null) {
@@ -204,8 +206,8 @@ fun HomeScreen(
                             SongSmallGridItem(
                                 song = song,
                                 modifier = Modifier
-                                    .width(240.dp)
-                                    .height(280.dp)
+                                    .width(280.dp)
+                                    .height(320.dp)
                                     .combinedClickable(
                                         onClick = {
                                             navController.navigate("album/${song.song.albumId}")
