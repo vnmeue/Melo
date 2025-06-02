@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -35,6 +36,7 @@ import com.malopieds.innertune.constants.PlayerHorizontalPadding
 import com.malopieds.innertune.constants.ShowLyricsKey
 import com.malopieds.innertune.constants.SwipeThumbnailKey
 import com.malopieds.innertune.constants.ThumbnailCornerRadius
+import com.malopieds.innertune.extensions.metadata
 import com.malopieds.innertune.ui.component.Lyrics
 import com.malopieds.innertune.utils.rememberPreference
 import kotlin.math.roundToInt
@@ -54,6 +56,13 @@ fun Thumbnail(
 
     val showLyrics by rememberPreference(ShowLyricsKey, false)
     val swipeThumbnail by rememberPreference(SwipeThumbnailKey, true)
+
+    // Get player and indices
+    val player = playerConnection.player
+    val currentIndex = player.currentMediaItemIndex
+    val nextIndex = if (currentIndex != -1 && currentIndex + 1 < player.mediaItemCount) currentIndex + 1 else -1
+    val nextMediaItem = if (nextIndex != -1) player.getMediaItemAt(nextIndex) else null
+    val nextMetadata = nextMediaItem?.metadata as? com.malopieds.innertune.models.MediaMetadata
 
     DisposableEffect(showLyrics) {
         currentView.keepScreenOn = showLyrics
@@ -105,6 +114,21 @@ fun Thumbnail(
                             )
                         },
             ) {
+                // Show next album art beneath current one
+                if (nextMetadata?.thumbnailUrl != null) {
+                    AsyncImage(
+                        model = nextMetadata.thumbnailUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .offset(y = 36.dp) // Push it down a bit
+                            .fillMaxWidth(0.85f) // Slightly smaller
+                            .aspectRatio(1f)
+                            .clip(RoundedCornerShape(ThumbnailCornerRadius * 2))
+                            .alpha(0.5f) // Dimmed
+                    )
+                }
+                // Current album art in focus
                 AsyncImage(
                     model = mediaMetadata?.thumbnailUrl,
                     contentDescription = null,
