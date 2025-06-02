@@ -24,9 +24,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -44,37 +46,73 @@ class HomeViewModel
                     it[QuickPicksKey].toEnum(QuickPicks.QUICK_PICKS)
                 }.distinctUntilChanged()
 
-        val quickPicks = MutableStateFlow<List<Song>?>(null)
-        val explorePage = MutableStateFlow<ExplorePage?>(null)
+        private val _quickPicks = MutableStateFlow<List<Song>?>(null)
+        val quickPicks: StateFlow<List<Song>?> = _quickPicks.asStateFlow()
 
-        val forgottenFavorite = MutableStateFlow<List<Song>?>(null)
-        val home = MutableStateFlow<List<HomePlayList>?>(null)
-        val keepListeningSongs = MutableStateFlow<List<Song>?>(null)
-        val keepListeningAlbums = MutableStateFlow<List<Song>?>(null)
-        val keepListeningArtists = MutableStateFlow<List<Artist>?>(null)
+        private val _explorePage = MutableStateFlow<ExplorePage?>(null)
+        val explorePage: StateFlow<ExplorePage?> = _explorePage.asStateFlow()
 
-        val keepListening = MutableStateFlow<List<Int>?>(null)
+        private val _forgottenFavorite = MutableStateFlow<List<Song>?>(null)
+        val forgottenFavorite: StateFlow<List<Song>?> = _forgottenFavorite.asStateFlow()
 
-        private val continuation = MutableStateFlow<String?>(null)
-        val homeFirstContinuation = MutableStateFlow<List<HomePlayList>?>(null)
-        val homeSecondContinuation = MutableStateFlow<List<HomePlayList>?>(null)
-        val homeThirdContinuation = MutableStateFlow<List<HomePlayList>?>(null)
+        private val _home = MutableStateFlow<List<HomePlayList>?>(null)
+        val home: StateFlow<List<HomePlayList>?> = _home.asStateFlow()
 
-        private val songsAlbumRecommendation = MutableStateFlow<List<Song>?>(null)
-        val homeFirstAlbumRecommendation = MutableStateFlow<HomeAlbumRecommendation?>(null)
-        val homeSecondAlbumRecommendation = MutableStateFlow<HomeAlbumRecommendation?>(null)
+        private val _keepListeningSongs = MutableStateFlow<List<Song>?>(null)
+        val keepListeningSongs: StateFlow<List<Song>?> = _keepListeningSongs.asStateFlow()
 
-        private val artistRecommendation = MutableStateFlow<List<Artist>?>(null)
-        val homeFirstArtistRecommendation = MutableStateFlow<HomeArtistRecommendation?>(null)
-        val homeSecondArtistRecommendation = MutableStateFlow<HomeArtistRecommendation?>(null)
-        val homeThirdArtistRecommendation = MutableStateFlow<HomeArtistRecommendation?>(null)
+        private val _keepListeningAlbums = MutableStateFlow<List<Song>?>(null)
+        val keepListeningAlbums: StateFlow<List<Song>?> = _keepListeningAlbums.asStateFlow()
 
-        val youtubePlaylists = MutableStateFlow<List<PlaylistItem>?>(null)
+        private val _keepListeningArtists = MutableStateFlow<List<Artist>?>(null)
+        val keepListeningArtists: StateFlow<List<Artist>?> = _keepListeningArtists.asStateFlow()
+
+        private val _keepListening = MutableStateFlow<List<Int>?>(null)
+        val keepListening: StateFlow<List<Int>?> = _keepListening.asStateFlow()
+
+        private val _continuation = MutableStateFlow<String?>(null)
+        val continuation: StateFlow<String?> = _continuation.asStateFlow()
+
+        private val _homeFirstContinuation = MutableStateFlow<List<HomePlayList>?>(null)
+        val homeFirstContinuation: StateFlow<List<HomePlayList>?> = _homeFirstContinuation.asStateFlow()
+
+        private val _homeSecondContinuation = MutableStateFlow<List<HomePlayList>?>(null)
+        val homeSecondContinuation: StateFlow<List<HomePlayList>?> = _homeSecondContinuation.asStateFlow()
+
+        private val _homeThirdContinuation = MutableStateFlow<List<HomePlayList>?>(null)
+        val homeThirdContinuation: StateFlow<List<HomePlayList>?> = _homeThirdContinuation.asStateFlow()
+
+        private val _songsAlbumRecommendation = MutableStateFlow<List<Song>?>(null)
+        val songsAlbumRecommendation: StateFlow<List<Song>?> = _songsAlbumRecommendation.asStateFlow()
+
+        private val _homeFirstAlbumRecommendation = MutableStateFlow<HomeAlbumRecommendation?>(null)
+        val homeFirstAlbumRecommendation: StateFlow<HomeAlbumRecommendation?> = _homeFirstAlbumRecommendation.asStateFlow()
+
+        private val _homeSecondAlbumRecommendation = MutableStateFlow<HomeAlbumRecommendation?>(null)
+        val homeSecondAlbumRecommendation: StateFlow<HomeAlbumRecommendation?> = _homeSecondAlbumRecommendation.asStateFlow()
+
+        private val _artistRecommendation = MutableStateFlow<List<Artist>?>(null)
+        val artistRecommendation: StateFlow<List<Artist>?> = _artistRecommendation.asStateFlow()
+
+        private val _homeFirstArtistRecommendation = MutableStateFlow<HomeArtistRecommendation?>(null)
+        val homeFirstArtistRecommendation: StateFlow<HomeArtistRecommendation?> = _homeFirstArtistRecommendation.asStateFlow()
+
+        private val _homeSecondArtistRecommendation = MutableStateFlow<HomeArtistRecommendation?>(null)
+        val homeSecondArtistRecommendation: StateFlow<HomeArtistRecommendation?> = _homeSecondArtistRecommendation.asStateFlow()
+
+        private val _homeThirdArtistRecommendation = MutableStateFlow<HomeArtistRecommendation?>(null)
+        val homeThirdArtistRecommendation: StateFlow<HomeArtistRecommendation?> = _homeThirdArtistRecommendation.asStateFlow()
+
+        private val _youtubePlaylists = MutableStateFlow<List<PlaylistItem>?>(null)
+        val youtubePlaylists: StateFlow<List<PlaylistItem>?> = _youtubePlaylists.asStateFlow()
+
+        private val _exception = MutableStateFlow<Throwable?>(null)
+        val exception: StateFlow<Throwable?> = _exception.asStateFlow()
 
         private suspend fun getQuickPicks() {
             when (quickPicksEnum.first()) {
                 QuickPicks.QUICK_PICKS ->
-                    quickPicks.value =
+                    _quickPicks.value =
                         database
                             .quickPicks()
                             .first()
@@ -98,14 +136,14 @@ class HomeViewModel
                     filteredArtists.add(it)
                 }
             }
-            keepListeningArtists.value = filteredArtists
-            keepListeningAlbums.value =
+            _keepListeningArtists.value = filteredArtists
+            _keepListeningAlbums.value =
                 database
                     .getRecommendationAlbum(limit = 8, offset = 2)
                     .first()
                     .shuffled()
                     .take(5)
-            keepListeningSongs.value =
+            _keepListeningSongs.value =
                 database
                     .mostPlayedSongs(System.currentTimeMillis() - 86400000 * 7 * 2, limit = 15, offset = 5)
                     .first()
@@ -113,29 +151,29 @@ class HomeViewModel
                     .take(10)
             val listenAgainBuilder = mutableListOf<Int>()
             var index = 0
-            keepListeningArtists.value?.forEach { _ ->
+            _keepListeningArtists.value?.forEach { _ ->
                 listenAgainBuilder.add(index)
                 index += 1
             }
             index = 5
-            keepListeningAlbums.value?.forEach { _ ->
+            _keepListeningAlbums.value?.forEach { _ ->
                 listenAgainBuilder.add(index)
                 index += 1
             }
             index = 10
-            keepListeningSongs.value?.forEach { _ ->
+            _keepListeningSongs.value?.forEach { _ ->
                 listenAgainBuilder.add(index)
                 index += 1
             }
-            keepListening.value = listenAgainBuilder.shuffled()
-            songsAlbumRecommendation.value =
+            _keepListening.value = listenAgainBuilder.shuffled()
+            _songsAlbumRecommendation.value =
                 database
                     .getRecommendationAlbum(limit = 10)
                     .first()
                     .shuffled()
                     .take(2)
 
-            artistRecommendation.value =
+            _artistRecommendation.value =
                 database
                     .mostPlayedArtists(System.currentTimeMillis() - 86400000 * 7, limit = 10)
                     .first()
@@ -146,9 +184,9 @@ class HomeViewModel
                 YouTube
                     .likedPlaylists()
                     .onSuccess {
-                        youtubePlaylists.value = it
+                        _youtubePlaylists.value = it
                     }.onFailure {
-                        reportException(it)
+                        _exception.value = it
                     }
             }
         }
@@ -158,11 +196,11 @@ class HomeViewModel
                 .home()
                 .onSuccess { res ->
                     res.getOrNull(1)?.continuation?.let {
-                        continuation.value = it
+                        _continuation.value = it
                     }
-                    home.value = res
+                    _home.value = res
                 }.onFailure {
-                    reportException(it)
+                    _exception.value = it
                 }
             continuationsLoad()
         }
@@ -176,39 +214,39 @@ class HomeViewModel
                     .browseContinuation(this)
                     .onSuccess { res ->
                         res.firstOrNull()?.continuation?.let {
-                            continuation.value = it
+                            _continuation.value = it
                         }
                         next.value = res
                     }.onFailure {
-                        reportException(it)
+                        _exception.value = it
                     }
             }
         }
 
         private suspend fun continuationsLoad() {
-            artistLoad(artistRecommendation.value?.getOrNull(0), homeFirstArtistRecommendation)
-            forgottenFavorite.value =
+            artistLoad(_artistRecommendation.value?.getOrNull(0), _homeFirstArtistRecommendation)
+            _forgottenFavorite.value =
                 database
                     .forgottenFavorites()
                     .first()
                     .shuffled()
                     .take(20)
-            continuation.value?.run {
-                continuation(this, homeFirstContinuation)
+            _continuation.value?.run {
+                continuation(this, _homeFirstContinuation)
             }
-            albumLoad(songsAlbumRecommendation.value?.getOrNull(0), homeFirstAlbumRecommendation)
+            albumLoad(_songsAlbumRecommendation.value?.getOrNull(0), _homeFirstAlbumRecommendation)
 
-            continuation.value?.run {
-                continuation(this, homeSecondContinuation)
+            _continuation.value?.run {
+                continuation(this, _homeSecondContinuation)
             }
-            artistLoad(artistRecommendation.value?.getOrNull(1), homeSecondArtistRecommendation)
+            artistLoad(_artistRecommendation.value?.getOrNull(1), _homeSecondArtistRecommendation)
 
-            continuation.value?.run {
-                continuation(this, homeThirdContinuation)
+            _continuation.value?.run {
+                continuation(this, _homeThirdContinuation)
             }
-            albumLoad(songsAlbumRecommendation.value?.getOrNull(1), homeSecondAlbumRecommendation)
+            albumLoad(_songsAlbumRecommendation.value?.getOrNull(1), _homeSecondAlbumRecommendation)
 
-            artistLoad(artistRecommendation.value?.getOrNull(2), homeThirdArtistRecommendation)
+            artistLoad(_artistRecommendation.value?.getOrNull(2), _homeThirdArtistRecommendation)
         }
 
         private suspend fun songLoad() {
@@ -226,7 +264,7 @@ class HomeViewModel
                             .first()
                             .shuffled()
                             .take(20)
-                    quickPicks.value = relatedSongs
+                    _quickPicks.value = relatedSongs
                 }
             }
         }
@@ -245,7 +283,7 @@ class HomeViewModel
                                 albums = page.albums,
                             )
                     }.onFailure {
-                        reportException(it)
+                        _exception.value = it
                     }
             }
         }

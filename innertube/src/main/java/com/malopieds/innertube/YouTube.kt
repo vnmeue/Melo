@@ -875,6 +875,26 @@ object YouTube {
                 }
         }
 
+    suspend fun charts(): Result<List<PlaylistItem>> =
+        runCatching {
+            val response = innerTube.browse(WEB_REMIX, browseId = "FEmusic_charts").body<BrowseResponse>()
+            response.contents
+                ?.singleColumnBrowseResultsRenderer
+                ?.tabs
+                ?.firstOrNull()
+                ?.tabRenderer
+                ?.content
+                ?.sectionListRenderer
+                ?.contents
+                ?.firstOrNull()
+                ?.gridRenderer
+                ?.items!!
+                .mapNotNull(GridRenderer.Item::musicTwoRowItemRenderer)
+                .mapNotNull {
+                    ArtistItemsPage.fromMusicTwoRowItemRenderer(it) as? PlaylistItem
+                }
+        }
+
     private val PlayerResponse.isValid
         get() =
             playabilityStatus.status == "OK" &&

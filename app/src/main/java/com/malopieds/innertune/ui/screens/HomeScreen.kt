@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
@@ -35,8 +36,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -87,6 +90,8 @@ import com.malopieds.innertune.ui.utils.SnapLayoutInfoProvider
 import com.malopieds.innertune.utils.rememberPreference
 import com.malopieds.innertune.viewmodels.HomeViewModel
 import kotlin.random.Random
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 
 @SuppressLint("UnrememberedMutableState")
 @Suppress("DEPRECATION")
@@ -105,25 +110,23 @@ fun HomeScreen(
 
     val quickPicks by viewModel.quickPicks.collectAsState()
     val explorePage by viewModel.explorePage.collectAsState()
-
     val forgottenFavorite by viewModel.forgottenFavorite.collectAsState()
-    val homeFirstAlbumRecommendation by viewModel.homeFirstAlbumRecommendation.collectAsState()
-    val homeSecondAlbumRecommendation by viewModel.homeSecondAlbumRecommendation.collectAsState()
-
-    val homeFirstArtistRecommendation by viewModel.homeFirstArtistRecommendation.collectAsState()
-    val homeSecondArtistRecommendation by viewModel.homeSecondArtistRecommendation.collectAsState()
-    val homeThirdArtistRecommendation by viewModel.homeThirdArtistRecommendation.collectAsState()
     val home by viewModel.home.collectAsState()
-
     val keepListeningSongs by viewModel.keepListeningSongs.collectAsState()
     val keepListeningAlbums by viewModel.keepListeningAlbums.collectAsState()
     val keepListeningArtists by viewModel.keepListeningArtists.collectAsState()
     val keepListening by viewModel.keepListening.collectAsState()
-
+    val continuation by viewModel.continuation.collectAsState()
     val homeFirstContinuation by viewModel.homeFirstContinuation.collectAsState()
     val homeSecondContinuation by viewModel.homeSecondContinuation.collectAsState()
     val homeThirdContinuation by viewModel.homeThirdContinuation.collectAsState()
-
+    val songsAlbumRecommendation by viewModel.songsAlbumRecommendation.collectAsState()
+    val homeFirstAlbumRecommendation by viewModel.homeFirstAlbumRecommendation.collectAsState()
+    val homeSecondAlbumRecommendation by viewModel.homeSecondAlbumRecommendation.collectAsState()
+    val artistRecommendation by viewModel.artistRecommendation.collectAsState()
+    val homeFirstArtistRecommendation by viewModel.homeFirstArtistRecommendation.collectAsState()
+    val homeSecondArtistRecommendation by viewModel.homeSecondArtistRecommendation.collectAsState()
+    val homeThirdArtistRecommendation by viewModel.homeThirdArtistRecommendation.collectAsState()
     val youtubePlaylists by viewModel.youtubePlaylists.collectAsState()
 
     val isRefreshing by viewModel.isRefreshing.collectAsState()
@@ -186,101 +189,41 @@ fun HomeScreen(
                     ),
                 )
 
-                quickPicks?.let { quickPicks ->
+                if (quickPicks != null) {
                     NavigationTitle(
                         title = stringResource(R.string.quick_picks),
+                        onClick = {
+                            navController.navigate("quick_picks")
+                        },
                     )
-
-                    if (quickPicks.isEmpty()) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .height(ListItemHeight * 4),
-                        ) {
-                            Text(
-                                text = stringResource(R.string.quick_picks_empty),
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.align(Alignment.Center),
-                            )
-                        }
-                    } else {
-                        LazyHorizontalGrid(
-                            state = mostPlayedLazyGridState,
-                            rows = GridCells.Fixed(4),
-                            flingBehavior =
-                                rememberSnapFlingBehavior(
-                                    snapLayoutInfoProviderQuickPicks,
-                                ),
-                            contentPadding =
-                                WindowInsets.systemBars
-                                    .only(WindowInsetsSides.Horizontal)
-                                    .asPaddingValues(),
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .height(ListItemHeight * 4),
-                        ) {
-                            items(
-                                items = quickPicks,
-                                key = { it.id },
-                            ) { originalSong ->
-                                val song by database
-                                    .song(originalSong.id)
-                                    .collectAsState(initial = originalSong)
-
-                                SongListItem(
-                                    song = song!!,
-                                    showInLibraryIcon = true,
-                                    isActive = song!!.id == mediaMetadata?.id,
-                                    isPlaying = isPlaying,
-                                    trailingContent = {
-                                        IconButton(
-                                            onClick = {
-                                                menuState.show {
-                                                    SongMenu(
-                                                        originalSong = song!!,
-                                                        navController = navController,
-                                                        onDismiss = menuState::dismiss,
-                                                    )
-                                                }
-                                            },
-                                        ) {
-                                            Icon(
-                                                painter = painterResource(R.drawable.more_vert),
-                                                contentDescription = null,
-                                            )
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(quickPicks!!) { song ->
+                            SongSmallGridItem(
+                                song = song,
+                                modifier = Modifier
+                                    .width(240.dp)
+                                    .height(280.dp)
+                                    .combinedClickable(
+                                        onClick = {
+                                            navController.navigate("album/${song.song.albumId}")
+                                        },
+                                        onLongClick = {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            menuState.show {
+                                                SongMenu(
+                                                    originalSong = song,
+                                                    navController = navController,
+                                                    onDismiss = menuState::dismiss,
+                                                )
+                                            }
                                         }
-                                    },
-                                    modifier =
-                                        Modifier
-                                            .width(horizontalLazyGridItemWidth)
-                                            .combinedClickable(
-                                                onClick = {
-                                                    if (song!!.id == mediaMetadata?.id) {
-                                                        playerConnection.player.togglePlayPause()
-                                                    } else {
-                                                        playerConnection.playQueue(
-                                                            YouTubeQueue(
-                                                                WatchEndpoint(videoId = song!!.id),
-                                                                song!!.toMediaMetadata(),
-                                                            ),
-                                                        )
-                                                    }
-                                                },
-                                                onLongClick = {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                    menuState.show {
-                                                        SongMenu(
-                                                            originalSong = song!!,
-                                                            navController = navController,
-                                                            onDismiss = menuState::dismiss,
-                                                        )
-                                                    }
-                                                },
-                                            ),
-                                )
-                            }
+                                    ),
+                                isActive = song.id == mediaMetadata?.id,
+                                isPlaying = isPlaying
+                            )
                         }
                     }
                 }

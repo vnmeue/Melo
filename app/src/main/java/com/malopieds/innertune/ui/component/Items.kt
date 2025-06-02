@@ -267,42 +267,30 @@ fun SmallGridItem(
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = if (isArtist == true) Alignment.CenterHorizontally else Alignment.Start,
-        modifier =
-            modifier
-                .fillMaxHeight()
-                .width(GridThumbnailHeight * thumbnailRatio)
-                .padding(12.dp),
+        modifier = modifier.padding(12.dp),
     ) {
         BoxWithConstraints(
-            modifier =
-                Modifier
-                    .height(SmallGridThumbnailHeight)
-                    .aspectRatio(thumbnailRatio)
-                    .clip(thumbnailShape),
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(thumbnailRatio)
+                .clip(thumbnailShape),
         ) {
             thumbnailContent()
         }
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.width(SmallGridThumbnailHeight),
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Start,
-                modifier =
-                    Modifier
-                        .basicMarquee()
-                        .fillMaxWidth(),
-            )
-        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Start,
+            modifier = Modifier
+                .basicMarquee()
+                .fillMaxWidth(),
+        )
     }
 }
 
