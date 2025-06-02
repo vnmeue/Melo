@@ -114,29 +114,29 @@ fun Thumbnail(
                             )
                         },
             ) {
-                // Show next album art beneath current one
+                // Show next album art as a stack behind current one
                 if (nextMetadata?.thumbnailUrl != null) {
                     AsyncImage(
                         model = nextMetadata.thumbnailUrl,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .offset(y = 36.dp) // Push it down a bit
-                            .fillMaxWidth(0.85f) // Slightly smaller
+                            .offset(x = 32.dp, y = 8.dp) // Reduced offset to shift left
+                            .fillMaxWidth(0.85f)
                             .aspectRatio(1f)
                             .clip(RoundedCornerShape(ThumbnailCornerRadius * 2))
-                            .alpha(0.5f) // Dimmed
+                            .alpha(0.6f)
                     )
                 }
-                // Current album art in focus
+                // Current album art in focus, shifted more to the left
                 AsyncImage(
                     model = mediaMetadata?.thumbnailUrl,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier =
                         Modifier
-                            .offset { IntOffset(offsetX.roundToInt(), 0) }
-                            .fillMaxWidth()
+                            .offset { IntOffset(offsetX.roundToInt() - 64, 0) } // Increased left shift to 64 pixels
+                            .fillMaxWidth(0.9f)
                             .aspectRatio(1f)
                             .clip(RoundedCornerShape(ThumbnailCornerRadius * 2))
                             .pointerInput(Unit) {
