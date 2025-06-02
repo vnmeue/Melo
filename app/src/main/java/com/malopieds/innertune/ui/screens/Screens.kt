@@ -13,7 +13,7 @@ sealed class Screens(
 ) {
     object Home : Screens(R.string.home, R.drawable.home, "home")
 
-    object Explore : Screens(R.string.explore, R.drawable.explore, "explore")
+    object Explore : Screens(R.string.explore, R.drawable.search, "explore")
 
     object Library : Screens(R.string.filter_library, R.drawable.library_music, "library")
 

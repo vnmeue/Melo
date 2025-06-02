@@ -30,6 +30,7 @@ import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -743,6 +744,11 @@ class MainActivity : ComponentActivity() {
                         BottomSheetPlayer(
                             state = playerBottomSheetState,
                             navController = navController,
+                        )
+
+                        HorizontalDivider(
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
                         )
 
                         NavigationBar(
