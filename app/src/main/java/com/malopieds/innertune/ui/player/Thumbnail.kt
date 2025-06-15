@@ -136,7 +136,7 @@ fun Thumbnail(
                     modifier =
                         Modifier
                             .offset { IntOffset(offsetX.roundToInt() - 32, 0) } // Reduced left shift to 32 pixels for better alignment
-                            .fillMaxWidth(0.9f)
+                            .fillMaxWidth(1.0f)
                             .aspectRatio(1f)
                             .clip(RoundedCornerShape(ThumbnailCornerRadius * 2))
                             .pointerInput(Unit) {
