@@ -1,7 +1,6 @@
 package com.malopieds.innertune.ui.screens.artist
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -66,13 +65,10 @@ fun ArtistSongsScreen(
     val playerConnection = LocalPlayerConnection.current ?: return
     val isPlaying by playerConnection.isPlaying.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
-
     val (sortType, onSortTypeChange) = rememberEnumPreference(ArtistSongSortTypeKey, ArtistSongSortType.CREATE_DATE)
     val (sortDescending, onSortDescendingChange) = rememberPreference(ArtistSongSortDescendingKey, true)
-
     val artist by viewModel.artist.collectAsState()
     val songs by viewModel.songs.collectAsState()
-
     val lazyListState = rememberLazyListState()
 
     Box(
@@ -103,9 +99,7 @@ fun ArtistSongsScreen(
                             }
                         },
                     )
-
                     Spacer(Modifier.weight(1f))
-
                     Text(
                         text = pluralStringResource(R.plurals.n_song, songs.size, songs.size),
                         style = MaterialTheme.typography.titleSmall,
@@ -113,15 +107,11 @@ fun ArtistSongsScreen(
                     )
                 }
             }
-
-            itemsIndexed(
-                items = songs,
-                key = { _, item -> item.id },
-            ) { index, song ->
+            itemsIndexed(songs) { index, song ->
                 SongListItem(
                     song = song,
                     isActive = song.id == mediaMetadata?.id,
-                    isPlaying = isPlaying,
+                    isPlaying = isPlaying && song.id == mediaMetadata?.id,
                     trailingContent = {
                         IconButton(
                             onClick = {
@@ -140,38 +130,12 @@ fun ArtistSongsScreen(
                             )
                         }
                     },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .combinedClickable(
-                                onClick = {
-                                    if (song.id == mediaMetadata?.id) {
-                                        playerConnection.player.togglePlayPause()
-                                    } else {
-                                        playerConnection.playQueue(
-                                            ListQueue(
-                                                title = context.getString(R.string.queue_all_songs),
-                                                items = songs.map { it.toMediaItem() },
-                                                startIndex = index,
-                                            ),
-                                        )
-                                    }
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    menuState.show {
-                                        SongMenu(
-                                            originalSong = song,
-                                            navController = navController,
-                                            onDismiss = menuState::dismiss,
-                                        )
-                                    }
-                                },
-                            ).animateItemPlacement(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateItemPlacement(),
                 )
             }
         }
-
         TopAppBar(
             title = { Text(artist?.artist?.name.orEmpty()) },
             navigationIcon = {
@@ -186,7 +150,6 @@ fun ArtistSongsScreen(
                 }
             },
         )
-
         HideOnScrollFAB(
             lazyListState = lazyListState,
             icon = R.drawable.shuffle,
