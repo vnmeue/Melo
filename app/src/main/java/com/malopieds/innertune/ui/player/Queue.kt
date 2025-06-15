@@ -72,6 +72,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -245,8 +246,11 @@ fun Queue(
                         .padding(bottom = 8.dp)
                         .height(56.dp),
                     shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.95f),
+                    color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.95f),
                 ) {
+                    val isDarkBackground = MaterialTheme.colorScheme.surfaceContainer.luminance() < 0.5f
+                    val textColor = if (isDarkBackground) Color.White else Color.Black
+                    
                     Row(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
@@ -299,7 +303,7 @@ fun Queue(
                                     style = MaterialTheme.typography.titleMedium,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
-                                    color = onBackgroundColor,
+                                    color = textColor,
                                     modifier = Modifier.fillMaxWidth()
                                 )
                                 if (queueWindows.size > 1) {
@@ -310,7 +314,7 @@ fun Queue(
                                             style = MaterialTheme.typography.bodyMedium,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
-                                            color = onBackgroundColor.copy(alpha = 0.7f),
+                                            color = textColor.copy(alpha = 0.85f),
                                             modifier = Modifier.fillMaxWidth()
                                         )
                                     }
@@ -320,7 +324,7 @@ fun Queue(
                         Icon(
                             painter = painterResource(R.drawable.expand_less),
                             contentDescription = null,
-                            tint = onBackgroundColor,
+                            tint = textColor,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -842,3 +846,4 @@ fun Queue(
         )
     }
 }
+
