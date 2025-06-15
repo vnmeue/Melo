@@ -76,6 +76,7 @@ android {
         includeInApk = false
         includeInBundle = false
     }
+    buildToolsVersion = "34.0.0"
 }
 
 ksp {

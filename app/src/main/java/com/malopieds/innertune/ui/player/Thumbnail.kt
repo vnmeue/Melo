@@ -114,29 +114,35 @@ fun Thumbnail(
                             )
                         },
             ) {
-                // Show next album art as a stack behind current one
-                if (nextMetadata?.thumbnailUrl != null) {
+                // Show next album art as a stack behind current one only if there's a next item
+                if (nextMetadata?.thumbnailUrl != null && player.mediaItemCount > 1) {
                     AsyncImage(
                         model = nextMetadata.thumbnailUrl,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .offset(x = 32.dp, y = 0.dp) // Removed vertical offset to center vertically
+                            .offset(x = 32.dp)
                             .fillMaxWidth(0.85f)
                             .aspectRatio(1f)
                             .clip(RoundedCornerShape(ThumbnailCornerRadius * 2))
                             .alpha(0.6f)
                     )
                 }
-                // Current album art in focus, shifted more to the left
+                // Current album art in focus
                 AsyncImage(
                     model = mediaMetadata?.thumbnailUrl,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier =
                         Modifier
-                            .offset { IntOffset(offsetX.roundToInt() - 32, 0) } // Reduced left shift to 32 pixels for better alignment
-                            .fillMaxWidth(1.0f)
+                            .offset { 
+                                if (player.mediaItemCount > 1) {
+                                    IntOffset(offsetX.roundToInt() - 32, 0)
+                                } else {
+                                    IntOffset(offsetX.roundToInt(), 0)
+                                }
+                            }
+                            .fillMaxWidth(if (player.mediaItemCount > 1) 1.0f else 1.05f)
                             .aspectRatio(1f)
                             .clip(RoundedCornerShape(ThumbnailCornerRadius * 2))
                             .pointerInput(Unit) {

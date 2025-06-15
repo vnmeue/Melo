@@ -273,6 +273,19 @@ fun Queue(
                                             .clip(RoundedCornerShape(8.dp))
                                     )
                                 }
+                            } else {
+                                mediaMetadata?.let { metadata ->
+                                    AsyncImage(
+                                        model = ImageRequest.Builder(LocalContext.current)
+                                            .data(metadata.thumbnailUrl)
+                                            .crossfade(true)
+                                            .build(),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                    )
+                                }
                             }
                             Column(
                                 verticalArrangement = Arrangement.Center,
@@ -282,7 +295,7 @@ fun Queue(
                                     .height(40.dp)
                             ) {
                                 Text(
-                                    text = queueTitle.orEmpty(),
+                                    text = if (queueWindows.size > 1) queueTitle.orEmpty() else mediaMetadata?.title.orEmpty(),
                                     style = MaterialTheme.typography.titleMedium,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
