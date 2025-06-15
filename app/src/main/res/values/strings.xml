@@ -365,4 +365,6 @@
     <string name="equalizer_settings">Equalizer settings</string>
     <string name="top_picks">Quick picks</string>
     <string name="listen_now">Listen Now</string>
+
+    <string name="update">Update</string>
 </resources>

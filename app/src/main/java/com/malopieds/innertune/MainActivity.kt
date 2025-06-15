@@ -6,12 +6,14 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.graphics.drawable.BitmapDrawable
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AlertDialog
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateDpAsState
@@ -166,11 +168,26 @@ class MainActivity : ComponentActivity() {
         }
 
     private var latestVersionName by mutableStateOf(BuildConfig.VERSION_NAME)
+    private var showUpdateDialog by mutableStateOf(false)
+    private var updateInfo: Updater.ReleaseInfo? = null
 
     override fun onStart() {
         super.onStart()
         startService(Intent(this, MusicService::class.java))
         bindService(Intent(this, MusicService::class.java), serviceConnection, Context.BIND_AUTO_CREATE)
+        
+        // Check for updates
+        lifecycleScope.launch {
+            if (Updater.shouldCheckForUpdates(Updater.lastCheckTime)) {
+                Updater.getLatestVersionInfo().onSuccess { releaseInfo ->
+                    if (releaseInfo.versionName != "v${BuildConfig.VERSION_NAME}") {
+                        latestVersionName = releaseInfo.versionName
+                        updateInfo = releaseInfo
+                        showUpdateDialog = true
+                    }
+                }
+            }
+        }
     }
 
     override fun onStop() {
@@ -207,6 +224,18 @@ class MainActivity : ComponentActivity() {
                         window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
                     }
                 }
+        }
+
+        if (showUpdateDialog && updateInfo != null) {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.new_version_available)
+                .setMessage(updateInfo?.releaseNotes)
+                .setPositiveButton(R.string.update) { _, _ ->
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(updateInfo?.downloadUrl))
+                    startActivity(intent)
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
         }
 
         setContent {
