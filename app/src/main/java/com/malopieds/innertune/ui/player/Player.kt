@@ -1,9 +1,12 @@
 package com.malopieds.innertune.ui.player
 
+import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.drawable.BitmapDrawable
 import android.text.format.Formatter
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDpAsState
@@ -124,6 +127,8 @@ import com.malopieds.innertune.ui.menu.PlayerMenu
 import com.malopieds.innertune.ui.screens.settings.DarkMode
 import com.malopieds.innertune.ui.screens.settings.PlayerTextAlignment
 import com.malopieds.innertune.ui.theme.extractGradientColors
+import com.malopieds.innertune.utils.BluetoothHeadsetManager
+import com.malopieds.innertune.utils.BluetoothPermissionHandler
 import com.malopieds.innertune.utils.joinByBullet
 import com.malopieds.innertune.utils.makeTimeString
 import com.malopieds.innertune.utils.rememberEnumPreference
@@ -146,6 +151,8 @@ fun BottomSheetPlayer(
     val context = LocalContext.current
     val database = LocalDatabase.current
     val menuState = LocalMenuState.current
+    val bluetoothHeadsetManager = remember { BluetoothHeadsetManager(context) }
+    val isHeadsetConnected by bluetoothHeadsetManager.isHeadsetConnected.collectAsState()
 
     val clipboardManager = LocalClipboardManager.current
 
@@ -193,6 +200,15 @@ fun BottomSheetPlayer(
 
     var changeColor by remember {
         mutableStateOf(false)
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions.values.all { it }) {
+            // Permissions granted, initialize Bluetooth
+            bluetoothHeadsetManager.openBluetoothSettings()
+        }
     }
 
     if (!canSkipNext && automix.isNotEmpty()) {
@@ -659,6 +675,35 @@ fun BottomSheetPlayer(
                         .fillMaxWidth()
                         .padding(horizontal = PlayerHorizontalPadding),
             ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier =
+                        Modifier
+                            .size(42.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(MaterialTheme.colorScheme.secondaryContainer)
+                            .clickable {
+                                if (BluetoothPermissionHandler.hasRequiredPermissions(context)) {
+                                    bluetoothHeadsetManager.openBluetoothSettings()
+                                } else {
+                                    permissionLauncher.launch(BluetoothPermissionHandler.getRequiredPermissions())
+                                }
+                            },
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.earphone),
+                        contentDescription = null,
+                        colorFilter = ColorFilter.tint(
+                            if (isHeadsetConnected) 
+                                MaterialTheme.colorScheme.primary 
+                            else 
+                                MaterialTheme.colorScheme.onSecondaryContainer
+                        ),
+                    )
+                }
+
+                Spacer(Modifier.width(12.dp))
+
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier =
