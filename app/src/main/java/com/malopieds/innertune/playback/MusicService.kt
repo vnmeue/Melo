@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.database.SQLException
+import android.media.MediaDescription
 import android.media.audiofx.AudioEffect
 import android.net.ConnectivityManager
 import android.os.Binder
@@ -197,7 +198,7 @@ class MusicService :
             DefaultMediaNotificationProvider(this, { NOTIFICATION_ID }, CHANNEL_ID, R.string.music_player)
                 .apply {
                     setSmallIcon(R.drawable.ic_launcher_background)
-                },
+                }
         )
         player =
             ExoPlayer
