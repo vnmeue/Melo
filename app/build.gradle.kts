@@ -121,6 +121,7 @@ dependencies {
     implementation(libs.squigglyslider)
 
     implementation(libs.room.runtime)
+    implementation(libs.appcompat)
     ksp(libs.room.compiler)
     implementation(libs.room.ktx)
 
