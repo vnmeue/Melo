@@ -121,7 +121,7 @@ fun Thumbnail(
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .offset(x = 32.dp, y = 8.dp) // Reduced offset to shift left
+                            .offset(x = 32.dp, y = 0.dp) // Removed vertical offset to center vertically
                             .fillMaxWidth(0.85f)
                             .aspectRatio(1f)
                             .clip(RoundedCornerShape(ThumbnailCornerRadius * 2))
@@ -135,7 +135,7 @@ fun Thumbnail(
                     contentScale = ContentScale.Crop,
                     modifier =
                         Modifier
-                            .offset { IntOffset(offsetX.roundToInt() - 64, 0) } // Increased left shift to 64 pixels
+                            .offset { IntOffset(offsetX.roundToInt() - 32, 0) } // Reduced left shift to 32 pixels for better alignment
                             .fillMaxWidth(0.9f)
                             .aspectRatio(1f)
                             .clip(RoundedCornerShape(ThumbnailCornerRadius * 2))
