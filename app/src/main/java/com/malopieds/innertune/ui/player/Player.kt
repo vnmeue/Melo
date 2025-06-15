@@ -160,8 +160,8 @@ fun BottomSheetPlayer(
 
     val isSystemInDarkTheme = isSystemInDarkTheme()
     val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)
-    val pureBlack by rememberPreference(PureBlackKey, defaultValue = false)
-    val playerBackground by rememberEnumPreference(PlayerBackgroundStyleKey, defaultValue = PlayerBackgroundStyle.DEFAULT)
+    val pureBlack by rememberPreference(PureBlackKey, defaultValue = true)
+    val playerBackground by rememberEnumPreference(PlayerBackgroundStyleKey, defaultValue = PlayerBackgroundStyle.GRADIENT)
     val useBlackBackground =
         remember(isSystemInDarkTheme, darkTheme, pureBlack, playerBackground) {
             val useDarkTheme = if (darkTheme == DarkMode.AUTO) isSystemInDarkTheme else darkTheme == DarkMode.ON
@@ -182,7 +182,7 @@ fun BottomSheetPlayer(
 
     var showLyrics by rememberPreference(ShowLyricsKey, defaultValue = false)
 
-    val sliderStyle by rememberEnumPreference(SliderStyleKey, SliderStyle.DEFAULT)
+    val sliderStyle by rememberEnumPreference(SliderStyleKey, SliderStyle.SQUIGGLY)
 
     var position by rememberSaveable(playbackState) {
         mutableLongStateOf(playerConnection.player.currentPosition)
