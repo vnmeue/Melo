@@ -42,6 +42,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Velocity
@@ -263,7 +264,9 @@ fun Lyrics(
                     val isCurrent = index == displayedCurrentLineIndex
                     Text(
                         text = item.text,
-                        fontSize = if (isCurrent) 28.sp else 22.sp,
+                        fontSize = if (isCurrent) 32.sp else 28.sp,
+                        lineHeight = if (isCurrent) 36.sp else 32.sp,
+                        fontFamily = FontFamily.SansSerif,
                         color = if (isCurrent) currentLine else outLines.copy(alpha = 0.5f),
                         textAlign = TextAlign.Left,
                         fontWeight = if (isCurrent) FontWeight.ExtraBold else FontWeight.Medium,
