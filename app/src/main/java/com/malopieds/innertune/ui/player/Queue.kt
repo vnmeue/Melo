@@ -13,6 +13,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -292,7 +293,6 @@ fun Queue(
                                 horizontalAlignment = Alignment.Start,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(40.dp)
                             ) {
                                 Text(
                                     text = if (queueWindows.size > 1) queueTitle.orEmpty() else mediaMetadata?.title.orEmpty(),
@@ -300,7 +300,9 @@ fun Queue(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     color = onBackgroundColor,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .basicMarquee()
                                 )
                                 if (queueWindows.size > 1) {
                                     val nextSong = queueWindows.getOrNull(currentWindowIndex + 1)?.mediaItem?.metadata
@@ -311,7 +313,9 @@ fun Queue(
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                             color = onBackgroundColor.copy(alpha = 0.7f),
-                                            modifier = Modifier.fillMaxWidth()
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .basicMarquee()
                                         )
                                     }
                                 }
