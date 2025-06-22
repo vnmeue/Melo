@@ -260,32 +260,21 @@ fun Lyrics(
                 itemsIndexed(
                     items = lines,
                 ) { index, item ->
+                    val isCurrent = index == displayedCurrentLineIndex
                     Text(
                         text = item.text,
-                        fontSize = 20.sp,
-                        color =
-                            if (index ==
-                                displayedCurrentLineIndex
-                            ) {
-                                currentLine
-                            } else {
-                                outLines
-                            },
-                        textAlign =
-                            when (lyricsTextPosition) {
-                                LyricsPosition.LEFT -> TextAlign.Left
-                                LyricsPosition.CENTER -> TextAlign.Center
-                                LyricsPosition.RIGHT -> TextAlign.Right
-                            },
-                        fontWeight = FontWeight.Bold,
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable(enabled = isSynced && changeLyrics) {
-                                    playerConnection.player.seekTo(item.time)
-                                    lastPreviewTime = 0L
-                                }.padding(horizontal = 24.dp, vertical = 8.dp)
-                                .alpha(if (!isSynced || index == displayedCurrentLineIndex) 1f else 0.5f),
+                        fontSize = if (isCurrent) 28.sp else 22.sp,
+                        color = if (isCurrent) currentLine else outLines.copy(alpha = 0.5f),
+                        textAlign = TextAlign.Left,
+                        fontWeight = if (isCurrent) FontWeight.ExtraBold else FontWeight.Medium,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = isSynced && changeLyrics) {
+                                playerConnection.player.seekTo(item.time)
+                                lastPreviewTime = 0L
+                            }
+                            .padding(horizontal = 24.dp, vertical = 12.dp)
+                            .alpha(1f),
                     )
                 }
             }
@@ -294,20 +283,14 @@ fun Lyrics(
         if (lyrics == LYRICS_NOT_FOUND) {
             Text(
                 text = stringResource(R.string.lyrics_not_found),
-                fontSize = 20.sp,
+                fontSize = 22.sp,
                 color = MaterialTheme.colorScheme.secondary,
-                textAlign =
-                    when (lyricsTextPosition) {
-                        LyricsPosition.LEFT -> TextAlign.Left
-                        LyricsPosition.CENTER -> TextAlign.Center
-                        LyricsPosition.RIGHT -> TextAlign.Right
-                    },
-                fontWeight = FontWeight.Bold,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 8.dp)
-                        .alpha(0.5f),
+                textAlign = TextAlign.Left,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 12.dp)
+                    .alpha(0.5f),
             )
         }
 
