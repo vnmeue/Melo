@@ -145,127 +145,135 @@ fun MiniPlayer(
     val coroutineScope = rememberCoroutineScope()
 
     Box(
-        modifier =
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+    ) {
+        Box(
+            modifier =
             modifier
                 .fillMaxWidth()
                 .height(MiniPlayerHeight)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)),
-    ) {
-        AnimatedProgressBar(
-            progress = if (duration == C.TIME_UNSET) 0f else (position.toFloat() / duration),
-            isPlaying = isPlaying,
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.TopCenter)
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            AnimatedProgressBar(
+                progress = if (duration == C.TIME_UNSET) 0f else (position.toFloat() / duration),
+                isPlaying = isPlaying,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+            )
+
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(end = 12.dp)
-                    .graphicsLayer(translationX = animatableOffsetX.value)
-                    .pointerInput(canSkipNext, canSkipPrevious) {
-                        detectHorizontalDragGestures(
-                            onDragStart = {
-                                dragOffsetX = 0f
-                                coroutineScope.launch { animatableOffsetX.stop() }
-                            },
-                            onHorizontalDrag = { change, dragAmount ->
-                                change.consume()
-                                dragOffsetX += dragAmount
-                                coroutineScope.launch {
-                                    animatableOffsetX.snapTo(dragOffsetX)
-                                }
-                            },
-                            onDragEnd = {
-                                when {
-                                    dragOffsetX > swipeThresholdPx && canSkipPrevious -> {
-                                        coroutineScope.launch {
-                                            animatableOffsetX.animateTo(
-                                                targetValue = 500f,
-                                                animationSpec = tween(durationMillis = 150)
-                                            )
-                                            animatableOffsetX.snapTo(-500f)
-                                            playerConnection.seekToPrevious()
-                                            animatableOffsetX.animateTo(0f, animationSpec = tween(durationMillis = 150))
-                                        }
-                                    }
-                                    dragOffsetX < -swipeThresholdPx && canSkipNext -> {
-                                        coroutineScope.launch {
-                                            animatableOffsetX.animateTo(
-                                                targetValue = -500f,
-                                                animationSpec = tween(durationMillis = 150)
-                                            )
-                                            animatableOffsetX.snapTo(500f)
-                                            playerConnection.seekToNext()
-                                            animatableOffsetX.animateTo(0f, animationSpec = tween(durationMillis = 150))
-                                        }
-                                    }
-                                    else -> {
-                                        coroutineScope.launch {
-                                            animatableOffsetX.animateTo(0f, animationSpec = tween(durationMillis = 200))
-                                        }
-                                    }
-                                }
-                            },
-                            onDragCancel = {
-                                coroutineScope.launch {
-                                    animatableOffsetX.animateTo(0f, animationSpec = tween(durationMillis = 200))
-                                }
-                            },
-                        )
-                    },
             ) {
-                Box(Modifier.weight(1f)) {
-                    mediaMetadata?.let {
-                        MiniMediaInfo(
-                            mediaMetadata = it,
-                            error = error,
-                            modifier = Modifier.padding(horizontal = 6.dp),
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(end = 12.dp)
+                        .graphicsLayer(translationX = animatableOffsetX.value)
+                        .pointerInput(canSkipNext, canSkipPrevious) {
+                            detectHorizontalDragGestures(
+                                onDragStart = {
+                                    dragOffsetX = 0f
+                                    coroutineScope.launch { animatableOffsetX.stop() }
+                                },
+                                onHorizontalDrag = { change, dragAmount ->
+                                    change.consume()
+                                    dragOffsetX += dragAmount
+                                    coroutineScope.launch {
+                                        animatableOffsetX.snapTo(dragOffsetX)
+                                    }
+                                },
+                                onDragEnd = {
+                                    when {
+                                        dragOffsetX > swipeThresholdPx && canSkipPrevious -> {
+                                            coroutineScope.launch {
+                                                animatableOffsetX.animateTo(
+                                                    targetValue = 500f,
+                                                    animationSpec = tween(durationMillis = 150)
+                                                )
+                                                animatableOffsetX.snapTo(-500f)
+                                                playerConnection.seekToPrevious()
+                                                animatableOffsetX.animateTo(0f, animationSpec = tween(durationMillis = 150))
+                                            }
+                                        }
+                                        dragOffsetX < -swipeThresholdPx && canSkipNext -> {
+                                            coroutineScope.launch {
+                                                animatableOffsetX.animateTo(
+                                                    targetValue = -500f,
+                                                    animationSpec = tween(durationMillis = 150)
+                                                )
+                                                animatableOffsetX.snapTo(500f)
+                                                playerConnection.seekToNext()
+                                                animatableOffsetX.animateTo(0f, animationSpec = tween(durationMillis = 150))
+                                            }
+                                        }
+                                        else -> {
+                                            coroutineScope.launch {
+                                                animatableOffsetX.animateTo(0f, animationSpec = tween(durationMillis = 200))
+                                            }
+                                        }
+                                    }
+                                },
+                                onDragCancel = {
+                                    coroutineScope.launch {
+                                        animatableOffsetX.animateTo(0f, animationSpec = tween(durationMillis = 200))
+                                    }
+                                },
+                            )
+                        },
+                ) {
+                    Box(Modifier.weight(1f)) {
+                        mediaMetadata?.let {
+                            MiniMediaInfo(
+                                mediaMetadata = it,
+                                error = error,
+                                modifier = Modifier.padding(horizontal = 6.dp),
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = {
+                            if (playbackState == Player.STATE_ENDED) {
+                                playerConnection.player.seekTo(0, 0)
+                                playerConnection.player.playWhenReady = true
+                            } else {
+                                playerConnection.player.togglePlayPause()
+                            }
+                        },
+                    ) {
+                        Icon(
+                            painter =
+                                painterResource(
+                                    if (playbackState ==
+                                        Player.STATE_ENDED
+                                    ) {
+                                        R.drawable.replay
+                                    } else if (isPlaying) {
+                                        R.drawable.pause
+                                    } else {
+                                        R.drawable.play
+                                    },
+                                ),
+                            contentDescription = null,
                         )
                     }
-                }
 
-                IconButton(
-                    onClick = {
-                        if (playbackState == Player.STATE_ENDED) {
-                            playerConnection.player.seekTo(0, 0)
-                            playerConnection.player.playWhenReady = true
-                        } else {
-                            playerConnection.player.togglePlayPause()
-                        }
-                    },
-                ) {
-                    Icon(
-                        painter =
-                            painterResource(
-                                if (playbackState ==
-                                    Player.STATE_ENDED
-                                ) {
-                                    R.drawable.replay
-                                } else if (isPlaying) {
-                                    R.drawable.pause
-                                } else {
-                                    R.drawable.play
-                                },
-                            ),
-                        contentDescription = null,
-                    )
-                }
-
-                IconButton(
-                    enabled = canSkipNext,
-                    onClick = playerConnection::seekToNext,
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.skip_next),
-                        contentDescription = null,
-                    )
+                    IconButton(
+                        enabled = canSkipNext,
+                        onClick = playerConnection::seekToNext,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.skip_next),
+                            contentDescription = null,
+                        )
+                    }
                 }
             }
         }
