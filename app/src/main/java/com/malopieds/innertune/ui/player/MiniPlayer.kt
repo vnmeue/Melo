@@ -37,6 +37,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +50,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -123,6 +127,11 @@ fun MiniPlayer(
     val error by playerConnection.error.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val canSkipNext by playerConnection.canSkipNext.collectAsState()
+    val canSkipPrevious by playerConnection.canSkipPrevious.collectAsState()
+
+    val density = LocalDensity.current
+    val swipeThresholdPx = with(density) { 75.dp.toPx() }
+    var offsetX by remember { mutableFloatStateOf(0f) }
 
     Box(
         modifier =
@@ -144,7 +153,28 @@ fun MiniPlayer(
             modifier =
                 modifier
                     .fillMaxSize()
-                    .padding(end = 12.dp),
+                    .padding(end = 12.dp)
+                    .pointerInput(canSkipNext, canSkipPrevious) {
+                        detectHorizontalDragGestures(
+                            onDragStart = {
+                                offsetX = 0f
+                            },
+                            onHorizontalDrag = { change, dragAmount ->
+                                change.consume()
+                                offsetX += dragAmount
+                            },
+                            onDragEnd = {
+                                if (offsetX > swipeThresholdPx) {
+                                    if (canSkipPrevious) playerConnection.seekToPrevious()
+                                } else if (offsetX < -swipeThresholdPx) {
+                                    if (canSkipNext) playerConnection.seekToNext()
+                                }
+                            },
+                            onDragCancel = {
+                                offsetX = 0f
+                            },
+                        )
+                    },
         ) {
             Box(Modifier.weight(1f)) {
                 mediaMetadata?.let {
