@@ -1321,93 +1321,171 @@ fun YouTubeListItem(
     isActive: Boolean = false,
     isPlaying: Boolean = false,
     trailingContent: @Composable RowScope.() -> Unit = {},
-) = ListItem(
-    title = item.title,
-    subtitle =
-        when (item) {
-            is SongItem -> joinByBullet(item.artists.joinToString { it.name }, makeTimeString(item.duration?.times(1000L)))
-            is AlbumItem -> joinByBullet(item.artists?.joinToString { it.name }, item.year?.toString())
-            is ArtistItem -> null
-            is PlaylistItem -> joinByBullet(item.author?.name, item.songCountText)
-        },
-    badges = badges,
-    thumbnailContent = {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.size(ListThumbnailSize),
-        ) {
-            val thumbnailShape = if (item is ArtistItem) CircleShape else RoundedCornerShape(ThumbnailCornerRadius)
-            if (albumIndex != null) {
-                AnimatedVisibility(
-                    visible = !isActive,
-                    enter = fadeIn() + expandIn(expandFrom = Alignment.Center),
-                    exit = shrinkOut(shrinkTowards = Alignment.Center) + fadeOut(),
+) {
+    val playerConnection = LocalPlayerConnection.current
+    var dragOffset by remember { mutableStateOf(0f) }
+    var itemWidth by remember { mutableStateOf(1f) } // avoid div by zero
+    var addedToQueue by remember { mutableStateOf(false) }
+    val dragThresholdPercent = 0.5f
+
+    val dragModifier = if (item is SongItem) {
+        Modifier
+            .onGloballyPositioned { coordinates ->
+                itemWidth = coordinates.size.width.toFloat()
+            }
+            .offset { IntOffset(dragOffset.roundToInt(), 0) }
+            .pointerInput(item.id) {
+                detectHorizontalDragGestures(
+                    onHorizontalDrag = { _, dragAmount ->
+                        dragOffset = (dragOffset + dragAmount).coerceAtLeast(0f)
+                    },
+                    onDragEnd = {
+                        if (dragOffset > itemWidth * dragThresholdPercent && !addedToQueue) {
+                            playerConnection?.addToQueue(item.toMediaItem())
+                            addedToQueue = true
+                        }
+                        dragOffset = 0f
+                        // Reset after a short delay to allow visual feedback
+                        if (addedToQueue) {
+                            GlobalScope.launch {
+                                delay(600)
+                                addedToQueue = false
+                            }
+                        }
+                    },
+                    onDragCancel = {
+                        dragOffset = 0f
+                    }
+                )
+            }
+    } else {
+        Modifier
+    }
+
+    Box(
+        modifier = modifier.then(dragModifier)
+            .background(Color.Transparent)
+    ) {
+        // Queue icon background (shows during drag)
+        if (item is SongItem && dragOffset > 0f) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize(),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.queue_music),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                    modifier = Modifier.size(48.dp).padding(start = 24.dp)
+                )
+            }
+        }
+        // Persistent queue icon at bottom left for SongItem
+        if (item is SongItem) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.BottomStart
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.queue_music),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                    modifier = Modifier.size(32.dp).padding(start = 16.dp, bottom = 8.dp)
+                )
+            }
+        }
+        // Draggable/regular item
+        ListItem(
+            title = item.title,
+            subtitle =
+                when (item) {
+                    is SongItem -> joinByBullet(item.artists.joinToString { it.name }, makeTimeString(item.duration?.times(1000L)))
+                    is AlbumItem -> joinByBullet(item.artists?.joinToString { it.name }, item.year?.toString())
+                    is ArtistItem -> null
+                    is PlaylistItem -> joinByBullet(item.author?.name, item.songCountText)
+                },
+            badges = badges,
+            thumbnailContent = {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(ListThumbnailSize),
                 ) {
-                    if (isSelected) {
-                        Icon(
-                            painter = painterResource(R.drawable.done),
-                            modifier = Modifier.align(Alignment.Center),
-                            contentDescription = null,
-                        )
+                    val thumbnailShape = if (item is ArtistItem) CircleShape else RoundedCornerShape(ThumbnailCornerRadius)
+                    if (albumIndex != null) {
+                        AnimatedVisibility(
+                            visible = !isActive,
+                            enter = fadeIn() + expandIn(expandFrom = Alignment.Center),
+                            exit = shrinkOut(shrinkTowards = Alignment.Center) + fadeOut(),
+                        ) {
+                            if (isSelected) {
+                                Icon(
+                                    painter = painterResource(R.drawable.done),
+                                    modifier = Modifier.align(Alignment.Center),
+                                    contentDescription = null,
+                                )
+                            } else {
+                                Text(
+                                    text = albumIndex.toString(),
+                                    style = MaterialTheme.typography.labelLarge,
+                                )
+                            }
+                        }
                     } else {
-                        Text(
-                            text = albumIndex.toString(),
-                            style = MaterialTheme.typography.labelLarge,
+                        if (isSelected) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxSize()
+                                        .zIndex(1000f)
+                                        .clip(RoundedCornerShape(ThumbnailCornerRadius))
+                                        .background(Color.Black.copy(alpha = 0.5f)),
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.done),
+                                    modifier = Modifier.align(Alignment.Center),
+                                    contentDescription = null,
+                                )
+                            }
+                        }
+                        AsyncImage(
+                            model = item.thumbnail,
+                            contentDescription = null,
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .clip(thumbnailShape),
                         )
                     }
-                }
-            } else {
-                if (isSelected) {
-                    Box(
+
+                    PlayingIndicatorBox(
+                        isActive = isActive,
+                        playWhenReady = isPlaying,
+                        color = if (albumIndex != null) MaterialTheme.colorScheme.onBackground else Color.White,
                         modifier =
                             Modifier
                                 .fillMaxSize()
-                                .zIndex(1000f)
-                                .clip(RoundedCornerShape(ThumbnailCornerRadius))
-                                .background(Color.Black.copy(alpha = 0.5f)),
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.done),
-                            modifier = Modifier.align(Alignment.Center),
-                            contentDescription = null,
-                        )
-                    }
+                                .background(
+                                    color =
+                                        if (albumIndex != null) {
+                                            Color.Transparent
+                                        } else {
+                                            Color.Black.copy(
+                                                alpha = 0.4f,
+                                            )
+                                        },
+                                    shape = thumbnailShape,
+                                ),
+                    )
                 }
-                AsyncImage(
-                    model = item.thumbnail,
-                    contentDescription = null,
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .clip(thumbnailShape),
-                )
-            }
-
-            PlayingIndicatorBox(
-                isActive = isActive,
-                playWhenReady = isPlaying,
-                color = if (albumIndex != null) MaterialTheme.colorScheme.onBackground else Color.White,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(
-                            color =
-                                if (albumIndex != null) {
-                                    Color.Transparent
-                                } else {
-                                    Color.Black.copy(
-                                        alpha = 0.4f,
-                                    )
-                                },
-                            shape = thumbnailShape,
-                        ),
-            )
-        }
-    },
-    trailingContent = trailingContent,
-    modifier = modifier,
-    isActive = isActive,
-)
+            },
+            trailingContent = trailingContent,
+            modifier = Modifier,
+            isActive = isActive,
+        )
+    }
+}
 
 @Composable
 fun YouTubeGridItem(
