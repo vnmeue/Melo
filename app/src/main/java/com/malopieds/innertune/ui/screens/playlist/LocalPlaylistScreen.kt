@@ -103,6 +103,7 @@ import com.malopieds.innertune.constants.ThumbnailCornerRadius
 import com.malopieds.innertune.db.entities.Playlist
 import com.malopieds.innertune.db.entities.PlaylistSong
 import com.malopieds.innertune.db.entities.PlaylistSongMap
+import com.malopieds.innertune.db.entities.Song
 import com.malopieds.innertune.extensions.move
 import com.malopieds.innertune.extensions.toMediaItem
 import com.malopieds.innertune.extensions.togglePlayPause
@@ -564,7 +565,7 @@ fun LocalPlaylistScreen(
                                         }
                                     }
 
-                                    IconButton(onClick = { shareDialogSong.value = song }) {
+                                    IconButton(onClick = { shareDialogSong.value = song.song }) {
                                         Icon(
                                             painter = painterResource(R.drawable.share),
                                             contentDescription = stringResource(R.string.share)
