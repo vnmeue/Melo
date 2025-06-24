@@ -55,6 +55,10 @@ import android.text.TextPaint
 import kotlinx.coroutines.withContext
 import android.widget.Toast
 import androidx.compose.ui.graphics.toArgb
+import androidx.core.content.ContextCompat
+import androidx.palette.graphics.Palette
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun ShareSongDialog(
@@ -66,20 +70,11 @@ fun ShareSongDialog(
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
-    val defaultColors = listOf(
-        MaterialTheme.colorScheme.primary,
-        MaterialTheme.colorScheme.secondary,
-        MaterialTheme.colorScheme.tertiary,
-        MaterialTheme.colorScheme.surface,
-        Color(0xFF1DB954), // Spotify green
-        Color(0xFF191414), // Spotify black
-        Color(0xFFFFFFFF), // White
-        Color(0xFF000000), // Black
-    )
     val artistNames = mediaMetadata.artists.joinToString { it.name }
     val coroutineScope = rememberCoroutineScope()
     var loadedBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isProcessing by remember { mutableStateOf(false) }
+    var paletteColors by remember { mutableStateOf<List<Color>>(emptyList()) }
 
     // Unified state for background selection. Can hold a List<Color> for gradients or a Color for solids.
     var selectedBackground by remember { mutableStateOf<Any>(gradientColors) }
@@ -89,6 +84,25 @@ fun ShareSongDialog(
             is Color -> SolidColor(selection)
             is List<*> -> Brush.linearGradient(selection.filterIsInstance<Color>())
             else -> Brush.linearGradient(gradientColors) // Fallback
+        }
+    }
+
+    val isDarkBackground = remember(selectedBackground) {
+        when (val bg = selectedBackground) {
+            is Color -> bg.isDark()
+            is List<*> -> true // Assume gradients are dark
+            else -> true
+        }
+    }
+    val textColor = if (isDarkBackground) Color.White else Color.Black
+
+    LaunchedEffect(loadedBitmap) {
+        if (loadedBitmap == null) return@LaunchedEffect
+        Palette.from(loadedBitmap!!).generate { palette ->
+            val swatches = palette?.swatches?.sortedByDescending { it.population } ?: emptyList()
+            val dark = swatches.filter { it.isDark() }.take(3).map { Color(it.rgb) }
+            val light = swatches.filterNot { it.isDark() }.take(3).map { Color(it.rgb) }
+            paletteColors = light + dark
         }
     }
 
@@ -149,54 +163,62 @@ fun ShareSongDialog(
                             Text(
                                 text = mediaMetadata.title,
                                 style = MaterialTheme.typography.titleLarge,
-                                color = Color.White,
+                                color = textColor,
                                 maxLines = 2
                             )
                             Text(
                                 text = artistNames,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.8f),
+                                color = textColor.copy(alpha = 0.8f),
                                 maxLines = 1
                             )
                         }
                     }
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(16.dp))
                     // Color Swatches
                     Row(
                         horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         // Gradient swatch
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .size(36.dp)
                                 .padding(4.dp)
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(10.dp))
                                 .background(Brush.linearGradient(gradientColors))
                                 .clickable(enabled = !isProcessing) { selectedBackground = gradientColors }
                                 .border(
                                     width = if (selectedBackground == gradientColors) 2.dp else 0.dp,
                                     color = if (selectedBackground == gradientColors) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                    shape = RoundedCornerShape(8.dp)
+                                    shape = RoundedCornerShape(10.dp)
                                 )
                         )
-                        // Solid color swatches
-                        defaultColors.forEach { color ->
+                        // Solid color swatches from palette
+                        paletteColors.forEach { color ->
                             Box(
                                 modifier = Modifier
-                                    .size(32.dp)
+                                    .size(36.dp)
                                     .padding(4.dp)
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(10.dp))
                                     .background(color)
                                     .clickable(enabled = !isProcessing) { selectedBackground = color }
                                     .border(
                                         width = if (selectedBackground == color) 2.dp else 0.dp,
                                         color = if (selectedBackground == color) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                        shape = RoundedCornerShape(8.dp)
+                                        shape = RoundedCornerShape(10.dp)
                                     )
                             )
                         }
                     }
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = "To share on Instagram, tap 'Share as Image' and select 'Stories' in the share sheet.",
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
                     Spacer(Modifier.height(16.dp))
                     // Share Options
                     Row(
@@ -204,7 +226,7 @@ fun ShareSongDialog(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         ShareOptionButton(
-                            icon = painterResource(R.drawable.copy),
+                            icon = painterResource(R.drawable.url_1423_svgrepo_com),
                             label = "Copy Link",
                             enabled = !isProcessing,
                             onClick = {
@@ -218,8 +240,8 @@ fun ShareSongDialog(
                             }
                         )
                         ShareOptionButton(
-                            icon = painterResource(R.drawable.instagram),
-                            label = "Instagram",
+                            icon = painterResource(R.drawable.image),
+                            label = "Share as Image",
                             enabled = !isProcessing,
                             onClick = {
                                 if (loadedBitmap == null) {
@@ -235,7 +257,8 @@ fun ShareSongDialog(
                                                 background = selectedBackground,
                                                 albumArt = loadedBitmap!!,
                                                 title = mediaMetadata.title,
-                                                artist = artistNames
+                                                artist = artistNames,
+                                                textColor = textColor
                                             )
                                             val file = File(context.cacheDir, "images/share_image.png")
                                             file.parentFile?.mkdirs()
@@ -319,7 +342,8 @@ private fun createShareBitmap(
     background: Any,
     albumArt: Bitmap,
     title: String,
-    artist: String
+    artist: String,
+    textColor: Color
 ): Bitmap {
     val width = 1080
     val height = 1920
@@ -327,71 +351,103 @@ private fun createShareBitmap(
     val canvas = Canvas(bitmap)
 
     // Draw Background
-    val paint = Paint()
     when (background) {
-        is Color -> {
-            paint.color = background.toArgb()
-        }
+        is Color -> canvas.drawColor(background.toArgb())
         is List<*> -> {
-            val colors = background.filterIsInstance<Color>().map { it.toArgb() }
-            if (colors.size > 1) {
-                paint.shader = LinearGradient(0f, 0f, 0f, height.toFloat(), colors.toIntArray(), null, Shader.TileMode.CLAMP)
-            } else if (colors.isNotEmpty()) {
-                paint.color = colors.first()
+            val colors = (background as? List<Color>)?.map { it.toArgb() }?.toIntArray()
+            if (colors != null) {
+                val shader = android.graphics.LinearGradient(0f, 0f, 0f, height.toFloat(), colors, null, android.graphics.Shader.TileMode.CLAMP)
+                val paint = Paint().apply { this.shader = shader }
+                canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
             }
         }
     }
-    canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+
+    // Draw App Logo
+    val logoDrawable = ContextCompat.getDrawable(context, R.drawable.ic_launcher_background)
+    if (logoDrawable != null) {
+        val logoTargetWidth = 100
+        val logoMargin = 64
+
+        // Calculate dimensions while preserving aspect ratio
+        val aspectRatio = logoDrawable.intrinsicWidth.toFloat() / logoDrawable.intrinsicHeight.toFloat()
+        val logoHeight = (logoTargetWidth / aspectRatio).toInt()
+        val logoLeft = width - logoTargetWidth - logoMargin
+        val logoTop = height - logoHeight - logoMargin
+
+        // Create a bitmap and canvas to draw the drawable onto
+        val logoBitmap = Bitmap.createBitmap(logoTargetWidth, logoHeight, Bitmap.Config.ARGB_8888)
+        val logoCanvas = Canvas(logoBitmap)
+        logoDrawable.setBounds(0, 0, logoCanvas.width, logoCanvas.height)
+        logoDrawable.draw(logoCanvas)
+
+        val paint = Paint().apply {
+            alpha = (255 * 0.7).toInt() // 70% opacity
+        }
+        canvas.drawBitmap(logoBitmap, logoLeft.toFloat(), logoTop.toFloat(), paint)
+    }
 
     // Draw Album Art (600x600, centered horizontally, with rounded corners)
-    val artSize = 600f
-    val cornerRadius = 64f
-    val scaledArt = Bitmap.createScaledBitmap(albumArt, artSize.toInt(), artSize.toInt(), true)
+    val artSize = 800
+    val cornerRadius = 60f
     val artLeft = (width - artSize) / 2f
     val artTop = height * 0.25f
     val artRect = RectF(artLeft, artTop, artLeft + artSize, artTop + artSize)
+    val scaledArt = Bitmap.createScaledBitmap(albumArt, artSize, artSize, true)
+
     val artPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     canvas.drawRoundRect(artRect, cornerRadius, cornerRadius, artPaint)
     artPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
     canvas.drawBitmap(scaledArt, null, artRect, artPaint)
 
-
     // Draw Title
     val titlePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.WHITE
+        color = textColor.toArgb()
         textSize = 80f
         textAlign = Paint.Align.CENTER
     }
-    val titleLayout = StaticLayout.Builder
-        .obtain(title, 0, title.length, titlePaint, width - 128)
-        .setAlignment(Layout.Alignment.ALIGN_CENTER)
-        .setLineSpacing(0f, 1.0f)
-        .setIncludePad(true)
+    val titleLayout = android.text.StaticLayout.Builder.obtain(title, 0, title.length, titlePaint, width - 160)
+        .setAlignment(android.text.Layout.Alignment.ALIGN_CENTER)
+        .setMaxLines(2)
+        .setEllipsize(android.text.TextUtils.TruncateAt.END)
         .build()
-    val titleTop = artTop + artSize + 80f
+
     canvas.save()
-    canvas.translate(width / 2f, titleTop)
+    canvas.translate(width / 2f, artTop + artSize + 80f)
     titleLayout.draw(canvas)
     canvas.restore()
 
     // Draw Artist
     val artistPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.WHITE
-        alpha = 200 // ~80%
+        color = textColor.toArgb()
+        this.alpha = (255 * 0.8f).toInt()
         textSize = 50f
         textAlign = Paint.Align.CENTER
     }
-    val artistTop = titleTop + titleLayout.height + 40f
-    val artistLayout = StaticLayout.Builder
-        .obtain(artist, 0, artist.length, artistPaint, width - 128)
-        .setAlignment(Layout.Alignment.ALIGN_CENTER)
-        .setLineSpacing(0f, 1.0f)
-        .setIncludePad(true)
+    val artistLayout = android.text.StaticLayout.Builder.obtain(artist, 0, artist.length, artistPaint, width - 160)
+        .setAlignment(android.text.Layout.Alignment.ALIGN_CENTER)
+        .setMaxLines(1)
+        .setEllipsize(android.text.TextUtils.TruncateAt.END)
         .build()
+
     canvas.save()
-    canvas.translate(width / 2f, artistTop)
+    canvas.translate(width / 2f, artTop + artSize + 80f + titleLayout.height + 20f)
     artistLayout.draw(canvas)
     canvas.restore()
 
     return bitmap
+}
+
+fun Palette.Swatch.isDark(): Boolean {
+    val hsl = this.hsl
+    return hsl[2] < 0.5f
+}
+
+fun Color.isDark(): Boolean {
+    // Luminance formula
+    val red = red * 255
+    val green = green * 255
+    val blue = blue * 255
+    val luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255
+    return luminance < 0.5
 } 
