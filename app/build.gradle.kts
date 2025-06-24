@@ -122,6 +122,7 @@ dependencies {
 
     implementation(libs.room.runtime)
     implementation(libs.appcompat)
+    implementation(libs.room.runtime.android)
     ksp(libs.room.compiler)
     implementation(libs.room.ktx)
 
@@ -140,4 +141,11 @@ dependencies {
     coreLibraryDesugaring(libs.desugaring)
 
     implementation(libs.timber)
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions {
+        freeCompilerArgs = freeCompilerArgs + "-Xcontext-receivers"
+        jvmTarget = "17"
+    }
 }

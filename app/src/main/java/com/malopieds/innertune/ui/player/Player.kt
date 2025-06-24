@@ -548,6 +548,21 @@ fun BottomSheetPlayer(
             expandedBound = state.expandedBound,
         )
 
+    var showPlayerMenu by remember { mutableStateOf(false) }
+
+    var showShareDialog by remember { mutableStateOf(false) }
+    if (showShareDialog) {
+        if (mediaMetadata?.id != null) {
+            ShareSongDialog(
+                mediaMetadata = mediaMetadata!!,
+                albumArt = mediaMetadata!!.thumbnailUrl,
+                onDismiss = { showShareDialog = false },
+                shareLink = "https://music.youtube.com/watch?v=${mediaMetadata!!.id}",
+                gradientColors = gradientColors
+            )
+        }
+    }
+
     BottomSheet(
         state = state,
         modifier = modifier,
@@ -699,6 +714,29 @@ fun BottomSheetPlayer(
                             else 
                                 MaterialTheme.colorScheme.onSecondaryContainer
                         ),
+                    )
+                }
+
+                Spacer(Modifier.width(12.dp))
+
+                // Share button
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier =
+                        Modifier
+                            .size(42.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(MaterialTheme.colorScheme.secondaryContainer)
+                            .clickable(
+                                enabled = true,
+                                onClick = {
+                                    showShareDialog = true
+                                }
+                            ),
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.share),
+                        contentDescription = "Share"
                     )
                 }
 

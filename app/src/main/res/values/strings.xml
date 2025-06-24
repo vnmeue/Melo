@@ -367,4 +367,11 @@
     <string name="listen_now">Listen Now</string>
 
     <string name="update">Update</string>
+
+    <string name="action_rename">Rename</string>
+    <string name="action_remove_from_playlist">Remove from playlist</string>
+    <string name="action_delete_playlist">Delete playlist</string>
+
+    <string name="error_playlist_name_long">Playlist name is too long</string>
+    <string name="error_saving_playlist">Error saving playlist</string>
 </resources>
