@@ -462,4 +462,100 @@ fun Color.isDark(): Boolean {
     val blue = blue * 255
     val luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255
     return luminance < 0.5
+}
+
+@Composable
+fun SharePlaylistDialog(
+    playlistName: String,
+    coverUrl: String?,
+    songCount: Int,
+    onDismiss: () -> Unit,
+    shareLink: String? = null
+) {
+    val context = LocalContext.current
+    var loadedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var isProcessing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(coverUrl) {
+        if (coverUrl == null) return@LaunchedEffect
+        val request = ImageRequest.Builder(context)
+            .data(coverUrl)
+            .allowHardware(false)
+            .target { drawable ->
+                loadedBitmap = (drawable as? BitmapDrawable)?.bitmap
+            }
+            .build()
+        context.imageLoader.enqueue(request)
+    }
+
+    Dialog(onDismissRequest = { if (!isProcessing) onDismiss() }) {
+        Box(contentAlignment = Alignment.Center) {
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                tonalElevation = 8.dp,
+                color = MaterialTheme.colorScheme.surface,
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    // Playlist Cover
+                    if (loadedBitmap != null) {
+                        Image(
+                            bitmap = loadedBitmap!!.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.Gray)
+                        )
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = playlistName,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2
+                    )
+                    Text(
+                        text = "$songCount songs",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                        maxLines = 1
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.End,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        TextButton(onClick = { onDismiss() }) {
+                            Text("Close")
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        if (shareLink != null) {
+                            TextButton(onClick = {
+                                isProcessing = true
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, shareLink)
+                                }
+                                context.startActivity(Intent.createChooser(intent, "Share Playlist"))
+                                isProcessing = false
+                                onDismiss()
+                            }) {
+                                Text("Share")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 } 

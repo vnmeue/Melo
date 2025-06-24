@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -64,8 +65,10 @@ import com.malopieds.innertune.ui.component.ListDialog
 import com.malopieds.innertune.ui.component.ListItem
 import com.malopieds.innertune.ui.component.SongListItem
 import com.malopieds.innertune.ui.component.YouTubeListItem
+import com.malopieds.innertune.ui.player.ShareSongDialog
 import com.malopieds.innertune.utils.reportException
 import java.time.LocalDateTime
+import com.malopieds.innertune.models.toMediaMetadata
 
 @SuppressLint("MutableCollectionMutableState")
 @Composable
@@ -131,6 +134,9 @@ fun YouTubeAlbumMenu(
         mutableStateOf(mutableListOf<Song>())
     }
 
+    val shareDialogSong = remember { mutableStateOf<com.malopieds.innertune.models.MediaMetadata?>(null) }
+    val showShareDialog = remember { derivedStateOf { shareDialogSong.value != null } }
+
     AddToPlaylistDialog(
         isVisible = showChoosePlaylistDialog,
         onAdd = { playlist ->
@@ -157,6 +163,15 @@ fun YouTubeAlbumMenu(
         onDismiss = { showChoosePlaylistDialog = false },
     )
 
+    if (showShareDialog.value) {
+        val song = shareDialogSong.value!!
+        ShareSongDialog(
+            mediaMetadata = song,
+            albumArt = song.thumbnailUrl,
+            onDismiss = { shareDialogSong.value = null }
+        )
+    }
+
     if (showErrorPlaylistAddDialog) {
         ListDialog(
             onDismiss = {
@@ -182,7 +197,17 @@ fun YouTubeAlbumMenu(
             }
 
             items(notAddedList) { song ->
-                SongListItem(song = song)
+                SongListItem(
+                    song = song,
+                    trailingContent = {
+                        IconButton(onClick = { shareDialogSong.value = song.toMediaMetadata() }) {
+                            Icon(
+                                painter = painterResource(R.drawable.share),
+                                contentDescription = stringResource(R.string.share)
+                            )
+                        }
+                    }
+                )
             }
         }
     }
@@ -345,14 +370,7 @@ fun YouTubeAlbumMenu(
             icon = R.drawable.share,
             title = R.string.share,
         ) {
-            val intent =
-                Intent().apply {
-                    action = Intent.ACTION_SEND
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, albumItem.shareLink)
-                }
-            context.startActivity(Intent.createChooser(intent, null))
-            onDismiss()
+            shareDialogSong.value = album?.songs?.firstOrNull()?.toMediaMetadata() ?: return@GridMenuItem
         }
     }
 }

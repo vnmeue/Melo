@@ -41,6 +41,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -62,6 +63,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
@@ -96,6 +98,7 @@ import com.malopieds.innertune.constants.PauseSearchHistoryKey
 import com.malopieds.innertune.constants.PureBlackKey
 import com.malopieds.innertune.constants.SearchSource
 import com.malopieds.innertune.constants.SearchSourceKey
+import com.malopieds.innertune.constants.WelcomeDialogShownKey
 import com.malopieds.innertune.db.MusicDatabase
 import com.malopieds.innertune.db.entities.SearchHistory
 import com.malopieds.innertune.extensions.*
@@ -140,6 +143,7 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.days
+import androidx.datastore.preferences.core.edit
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -239,6 +243,81 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
+            val context = LocalContext.current
+            val coroutineScope = rememberCoroutineScope()
+            var showWelcomeDialog by rememberSaveable { mutableStateOf(false) }
+            var checkedWelcomeFlag by remember { mutableStateOf(false) }
+
+            LaunchedEffect(Unit) {
+                val alreadyShown = context.dataStore[WelcomeDialogShownKey] ?: false
+                checkedWelcomeFlag = true
+                if (!alreadyShown) {
+                    showWelcomeDialog = true
+                }
+            }
+
+            if (showWelcomeDialog && checkedWelcomeFlag) {
+                DefaultDialog(
+                    onDismiss = {
+                        showWelcomeDialog = false
+                        coroutineScope.launch {
+                            context.dataStore.edit { it[WelcomeDialogShownKey] = true }
+                        }
+                    },
+                    icon = {
+                        androidx.compose.material3.Icon(
+                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp)
+                        )
+                    },
+                    title = {
+                        Text("Welcome to Melo!", style = MaterialTheme.typography.headlineSmall)
+                    },
+                    buttons = {
+                        TextButton(onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/vnmeue/melo"))
+                            context.startActivity(intent)
+                            showWelcomeDialog = false
+                            coroutineScope.launch {
+                                context.dataStore.edit { it[WelcomeDialogShownKey] = true }
+                            }
+                        }) {
+                            Text("Star on GitHub")
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        TextButton(onClick = {
+                            showWelcomeDialog = false
+                            coroutineScope.launch {
+                                context.dataStore.edit { it[WelcomeDialogShownKey] = true }
+                            }
+                        }) {
+                            Text("Close")
+                        }
+                    },
+                    content = {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                "If you like the app, please consider starring our repository:",
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                            Text(
+                                "github.com/vnmeue/melo",
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            )
+                            Text(
+                                "Lots of love \u2764\uFE0F",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                    }
+                )
+            }
+
             LaunchedEffect(Unit) {
                 if (System.currentTimeMillis() - Updater.lastCheckTime > 1.days.inWholeMilliseconds) {
                     Updater.getLatestVersionName().onSuccess {

@@ -134,6 +134,7 @@ import org.burnoutcrew.reorderable.detectReorder
 import org.burnoutcrew.reorderable.rememberReorderableLazyListState
 import org.burnoutcrew.reorderable.reorderable
 import java.time.LocalDateTime
+import com.malopieds.innertune.ui.player.ShareSongDialog
 
 @SuppressLint("RememberReturnType")
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
@@ -312,6 +313,18 @@ fun LocalPlaylistScreen(
     }
 
     var dismissJob: Job? by remember { mutableStateOf(null) }
+
+    val shareDialogSong = remember { mutableStateOf<Song?>(null) }
+    val showShareDialog = remember { derivedStateOf { shareDialogSong.value != null } }
+
+    if (showShareDialog.value) {
+        val song = shareDialogSong.value!!
+        ShareSongDialog(
+            mediaMetadata = song.toMediaMetadata(),
+            albumArt = song.song.thumbnailUrl,
+            onDismiss = { shareDialogSong.value = null }
+        )
+    }
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -550,6 +563,13 @@ fun LocalPlaylistScreen(
                                             )
                                         }
                                     }
+
+                                    IconButton(onClick = { shareDialogSong.value = song }) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.share),
+                                            contentDescription = stringResource(R.string.share)
+                                        )
+                                    }
                                 },
                                 modifier =
                                     Modifier
@@ -683,6 +703,13 @@ fun LocalPlaylistScreen(
                                                 contentDescription = null,
                                             )
                                         }
+                                    }
+
+                                    IconButton(onClick = { shareDialogSong.value = songWrapper.item.song }) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.share),
+                                            contentDescription = stringResource(R.string.share)
+                                        )
                                     }
                                 },
                                 isSelected = songWrapper.isSelected && selection,

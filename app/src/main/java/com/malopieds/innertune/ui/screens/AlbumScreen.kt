@@ -34,6 +34,7 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -94,6 +95,7 @@ import com.malopieds.innertune.ui.utils.ItemWrapper
 import com.malopieds.innertune.ui.utils.backToMain
 import com.malopieds.innertune.viewmodels.AlbumViewModel
 import com.malopieds.innertune.ui.player.ShareSongDialog
+import com.malopieds.innertune.models.toMediaMetadata
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -128,7 +130,10 @@ fun AlbumScreen(
         mutableStateOf(Download.STATE_STOPPED)
     }
 
-    var showShareDialog by remember { mutableStateOf(false) }
+    val shareDialogSong = remember { mutableStateOf<Song?>(null) }
+    val showShareDialog = remember { derivedStateOf { shareDialogSong.value != null } }
+
+    val shareAlbumDialogOpen = remember { mutableStateOf(false) }
 
     LaunchedEffect(albumWithSongs) {
         val songs = albumWithSongs?.songs?.map { it.id }
@@ -336,7 +341,7 @@ fun AlbumScreen(
                                 }
 
                                 IconButton(
-                                    onClick = { showShareDialog = true },
+                                    onClick = { shareAlbumDialogOpen.value = true },
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.share),
@@ -497,7 +502,6 @@ fun AlbumScreen(
                                                     ListQueue(
                                                         title = albumWithSongs.album.title,
                                                         items = albumWithSongs.songs.map { it.toMediaItem() },
-                                                        startIndex = index,
                                                     ),
                                                 )
                                             }
@@ -506,13 +510,9 @@ fun AlbumScreen(
                                         }
                                     },
                                     onLongClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        menuState.show {
-                                            SongMenu(
-                                                originalSong = songWrapper.item,
-                                                navController = navController,
-                                                onDismiss = menuState::dismiss,
-                                            )
+                                        if (!selection) {
+                                            selection = true
+                                            songWrapper.isSelected = true
                                         }
                                     },
                                 ),
@@ -601,7 +601,16 @@ fun AlbumScreen(
     }
 
     val albumWithSongsValue = albumWithSongs
-    if (showShareDialog && albumWithSongsValue != null) {
+    if (showShareDialog.value && albumWithSongsValue != null) {
+        val song = shareDialogSong.value!!
+        ShareSongDialog(
+            mediaMetadata = song.toMediaMetadata(),
+            albumArt = song.song.thumbnailUrl,
+            onDismiss = { shareDialogSong.value = null }
+        )
+    }
+
+    if (shareAlbumDialogOpen.value && albumWithSongsValue != null) {
         val albumArtists = albumWithSongsValue.artists.map {
             com.malopieds.innertune.models.MediaMetadata.Artist(
                 id = it.id,
@@ -622,7 +631,7 @@ fun AlbumScreen(
         ShareSongDialog(
             mediaMetadata = albumMeta,
             albumArt = albumWithSongsValue.album.thumbnailUrl,
-            onDismiss = { showShareDialog = false },
+            onDismiss = { shareAlbumDialogOpen.value = false },
             shareLink = "https://music.youtube.com/playlist?list=${albumWithSongsValue.album.id}",
             gradientColors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
         )

@@ -72,6 +72,7 @@ import com.malopieds.innertune.ui.component.ListDialog
 import com.malopieds.innertune.ui.component.ListItem
 import com.malopieds.innertune.ui.component.SongListItem
 import com.malopieds.innertune.ui.component.TextFieldDialog
+import com.malopieds.innertune.ui.player.ShareSongDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
@@ -254,6 +255,15 @@ fun SongMenu(
 
     HorizontalDivider()
 
+    val shareDialogOpen = remember { mutableStateOf(false) }
+    if (shareDialogOpen.value) {
+        ShareSongDialog(
+            mediaMetadata = song.toMediaMetadata(),
+            albumArt = song.song.thumbnailUrl,
+            onDismiss = { shareDialogOpen.value = false }
+        )
+    }
+
     GridMenu(
         contentPadding =
             PaddingValues(
@@ -338,14 +348,7 @@ fun SongMenu(
             icon = R.drawable.share,
             title = R.string.share,
         ) {
-            onDismiss()
-            val intent =
-                Intent().apply {
-                    action = Intent.ACTION_SEND
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/watch?v=${song.id}")
-                }
-            context.startActivity(Intent.createChooser(intent, null))
+            shareDialogOpen.value = true
         }
         GridMenuItem(
             icon = {

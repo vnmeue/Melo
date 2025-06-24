@@ -57,6 +57,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+import com.malopieds.innertune.ui.player.SharePlaylistDialog
 
 @Composable
 fun PlaylistMenu(
@@ -183,6 +184,65 @@ fun PlaylistMenu(
         mutableStateOf(false)
     }
 
+    var showShareDialog by remember { mutableStateOf(false) }
+
+    if (showEditDialog) {
+        TextFieldDialog(
+            icon = { Icon(painter = painterResource(R.drawable.edit), contentDescription = null) },
+            title = { Text(text = stringResource(R.string.edit_playlist)) },
+            onDismiss = { showEditDialog = false },
+            initialTextFieldValue =
+                TextFieldValue(
+                    playlist.playlist.name,
+                    TextRange(playlist.playlist.name.length),
+                ),
+            onDone = { name ->
+                onDismiss()
+                database.query {
+                    update(playlist.playlist.copy(name = name, lastUpdateTime = LocalDateTime.now()))
+                }
+            },
+        )
+    }
+
+    if (showRemoveDownloadDialog) {
+        DefaultDialog(
+            onDismiss = { showRemoveDownloadDialog = false },
+            content = {
+                Text(
+                    text = stringResource(R.string.remove_download_playlist_confirm, playlist.playlist.name),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(horizontal = 18.dp),
+                )
+            },
+            buttons = {
+                TextButton(
+                    onClick = {
+                        showRemoveDownloadDialog = false
+                    },
+                ) {
+                    Text(text = stringResource(android.R.string.cancel))
+                }
+
+                TextButton(
+                    onClick = {
+                        showRemoveDownloadDialog = false
+                        songs.forEach { song ->
+                            DownloadService.sendRemoveDownload(
+                                context,
+                                ExoDownloadService::class.java,
+                                song.song.id,
+                                false,
+                            )
+                        }
+                    },
+                ) {
+                    Text(text = stringResource(android.R.string.ok))
+                }
+            },
+        )
+    }
+
     if (showDeletePlaylistDialog) {
         DefaultDialog(
             onDismiss = { showDeletePlaylistDialog = false },
@@ -214,6 +274,16 @@ fun PlaylistMenu(
                     Text(text = stringResource(android.R.string.ok))
                 }
             },
+        )
+    }
+
+    if (showShareDialog) {
+        SharePlaylistDialog(
+            playlistName = playlist.playlist.name,
+            coverUrl = playlist.thumbnails.firstOrNull(),
+            songCount = songs.size,
+            onDismiss = { showShareDialog = false },
+            shareLink = playlist.playlist.browseId?.let { "https://music.youtube.com/playlist?list=$it" }
         )
     }
 
@@ -343,6 +413,13 @@ fun PlaylistMenu(
                     }
                 }
             }
+        }
+
+        GridMenuItem(
+            icon = R.drawable.share,
+            title = R.string.share,
+        ) {
+            showShareDialog = true
         }
     }
 }
