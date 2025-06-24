@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -88,12 +89,14 @@ import com.malopieds.innertune.ui.menu.YouTubeAlbumMenu
 import com.malopieds.innertune.ui.menu.YouTubeArtistMenu
 import com.malopieds.innertune.ui.menu.YouTubePlaylistMenu
 import com.malopieds.innertune.ui.menu.YouTubeSongMenu
+import com.malopieds.innertune.ui.player.ShareSongDialog
 import com.malopieds.innertune.ui.utils.backToMain
 import com.malopieds.innertune.ui.utils.fadingEdge
 import com.malopieds.innertune.ui.utils.resize
 import com.malopieds.innertune.viewmodels.ArtistViewModel
 import com.valentinilk.shimmer.shimmer
 import java.time.LocalDateTime
+import androidx.compose.runtime.setValue
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -122,6 +125,8 @@ fun ArtistScreen(
             lazyListState.firstVisibleItemIndex <= 1
         }
     }
+
+    var showShareDialog by remember { mutableStateOf(false) }
 
     LazyColumn(
         state = lazyListState,
@@ -473,6 +478,27 @@ fun ArtistScreen(
         }
     }
 
+    if (showShareDialog && artistPage != null) {
+        val artistMeta = com.malopieds.innertune.models.MediaMetadata(
+            id = artistPage.artist.id,
+            title = artistPage.artist.title,
+            artists = listOf(com.malopieds.innertune.models.MediaMetadata.Artist(
+                id = artistPage.artist.id,
+                name = artistPage.artist.title
+            )),
+            duration = 0,
+            thumbnailUrl = artistPage.artist.thumbnail,
+            album = null
+        )
+        ShareSongDialog(
+            mediaMetadata = artistMeta,
+            albumArt = artistPage.artist.thumbnail,
+            onDismiss = { showShareDialog = false },
+            shareLink = "https://music.youtube.com/channel/${artistPage.artist.id}",
+            gradientColors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
+        )
+    }
+
     TopAppBar(
         title = { if (!transparentAppBar) Text(artistPage?.artist?.title.orEmpty()) },
         navigationIcon = {
@@ -525,17 +551,7 @@ fun ArtistScreen(
             }
 
             IconButton(
-                onClick = {
-                    viewModel.artistPage?.artist?.shareLink?.let { link ->
-                        val intent =
-                            Intent().apply {
-                                action = Intent.ACTION_SEND
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, link)
-                            }
-                        context.startActivity(Intent.createChooser(intent, null))
-                    }
-                },
+                onClick = { showShareDialog = true },
             ) {
                 Icon(
                     painterResource(R.drawable.share),

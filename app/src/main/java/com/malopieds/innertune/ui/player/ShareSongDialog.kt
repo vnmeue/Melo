@@ -73,6 +73,7 @@ fun ShareSongDialog(
     val artistNames = mediaMetadata.artists.joinToString { it.name }
     val coroutineScope = rememberCoroutineScope()
     var loadedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var squareBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isProcessing by remember { mutableStateOf(false) }
     var paletteColors by remember { mutableStateOf<List<Color>>(emptyList()) }
 
@@ -98,7 +99,13 @@ fun ShareSongDialog(
 
     LaunchedEffect(loadedBitmap) {
         if (loadedBitmap == null) return@LaunchedEffect
-        Palette.from(loadedBitmap!!).generate { palette ->
+        // Center-crop to square
+        val bmp = loadedBitmap!!
+        val size = minOf(bmp.width, bmp.height)
+        val x = (bmp.width - size) / 2
+        val y = (bmp.height - size) / 2
+        squareBitmap = Bitmap.createBitmap(bmp, x, y, size, size)
+        Palette.from(squareBitmap!!).generate { palette ->
             val swatches = palette?.swatches?.sortedByDescending { it.population } ?: emptyList()
             val dark = swatches.filter { it.isDark() }.take(3).map { Color(it.rgb) }
             val light = swatches.filterNot { it.isDark() }.take(3).map { Color(it.rgb) }
@@ -143,9 +150,9 @@ fun ShareSongDialog(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.padding(16.dp)
                         ) {
-                            if (loadedBitmap != null) {
+                            if (squareBitmap != null) {
                                 Image(
-                                    bitmap = loadedBitmap!!.asImageBitmap(),
+                                    bitmap = squareBitmap!!.asImageBitmap(),
                                     contentDescription = null,
                                     modifier = Modifier
                                         .size(120.dp)
@@ -244,7 +251,7 @@ fun ShareSongDialog(
                             label = "Share as Image",
                             enabled = !isProcessing,
                             onClick = {
-                                if (loadedBitmap == null) {
+                                if (squareBitmap == null) {
                                     Toast.makeText(context, "Album art is still loading.", Toast.LENGTH_SHORT).show()
                                     return@ShareOptionButton
                                 }
@@ -255,7 +262,7 @@ fun ShareSongDialog(
                                             val image = createShareBitmap(
                                                 context = context,
                                                 background = selectedBackground,
-                                                albumArt = loadedBitmap!!,
+                                                albumArt = squareBitmap!!,
                                                 title = mediaMetadata.title,
                                                 artist = artistNames,
                                                 textColor = textColor

@@ -367,19 +367,6 @@ fun AlbumMenu(
                 }
             }
         }
-        GridMenuItem(
-            icon = R.drawable.share,
-            title = R.string.share,
-        ) {
-            onDismiss()
-            val intent =
-                Intent().apply {
-                    action = Intent.ACTION_SEND
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/browse/${album.album.id}")
-                }
-            context.startActivity(Intent.createChooser(intent, null))
-        }
         if (selectAction != {}) {
             GridMenuItem(
                 icon = R.drawable.select_all,

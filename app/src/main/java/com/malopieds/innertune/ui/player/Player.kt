@@ -736,7 +736,8 @@ fun BottomSheetPlayer(
                 ) {
                     Image(
                         painter = painterResource(R.drawable.share),
-                        contentDescription = "Share"
+                        contentDescription = "Share",
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSecondaryContainer),
                     )
                 }
 

@@ -93,6 +93,7 @@ import com.malopieds.innertune.ui.menu.YouTubeAlbumMenu
 import com.malopieds.innertune.ui.utils.ItemWrapper
 import com.malopieds.innertune.ui.utils.backToMain
 import com.malopieds.innertune.viewmodels.AlbumViewModel
+import com.malopieds.innertune.ui.player.ShareSongDialog
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -126,6 +127,8 @@ fun AlbumScreen(
     var downloadState by remember {
         mutableStateOf(Download.STATE_STOPPED)
     }
+
+    var showShareDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(albumWithSongs) {
         val songs = albumWithSongs?.songs?.map { it.id }
@@ -329,6 +332,16 @@ fun AlbumScreen(
                                     Icon(
                                         painter = painterResource(R.drawable.more_vert),
                                         contentDescription = null,
+                                    )
+                                }
+
+                                IconButton(
+                                    onClick = { showShareDialog = true },
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.share),
+                                        contentDescription = stringResource(R.string.share),
+                                        tint = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                             }
@@ -585,6 +598,34 @@ fun AlbumScreen(
                 }
             }
         }
+    }
+
+    val albumWithSongsValue = albumWithSongs
+    if (showShareDialog && albumWithSongsValue != null) {
+        val albumArtists = albumWithSongsValue.artists.map {
+            com.malopieds.innertune.models.MediaMetadata.Artist(
+                id = it.id,
+                name = it.name
+            )
+        }
+        val albumMeta = com.malopieds.innertune.models.MediaMetadata(
+            id = albumWithSongsValue.album.id,
+            title = albumWithSongsValue.album.title,
+            artists = albumArtists,
+            duration = albumWithSongsValue.songs.sumOf { it.song.duration },
+            thumbnailUrl = albumWithSongsValue.album.thumbnailUrl,
+            album = com.malopieds.innertune.models.MediaMetadata.Album(
+                id = albumWithSongsValue.album.id,
+                title = albumWithSongsValue.album.title
+            )
+        )
+        ShareSongDialog(
+            mediaMetadata = albumMeta,
+            albumArt = albumWithSongsValue.album.thumbnailUrl,
+            onDismiss = { showShareDialog = false },
+            shareLink = "https://music.youtube.com/playlist?list=${albumWithSongsValue.album.id}",
+            gradientColors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
+        )
     }
 
     TopAppBar(
