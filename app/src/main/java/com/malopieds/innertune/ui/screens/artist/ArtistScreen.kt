@@ -487,12 +487,12 @@ fun ArtistScreen(
                 name = artistPage.artist.title
             )),
             duration = 0,
-            thumbnailUrl = artistPage.artist.thumbnail,
+            thumbnailUrl = artistPage.artist.thumbnail.resize(544, 544),
             album = null
         )
         ShareSongDialog(
             mediaMetadata = artistMeta,
-            albumArt = artistPage.artist.thumbnail,
+            albumArt = artistPage.artist.thumbnail.resize(544, 544),
             onDismiss = { showShareDialog = false },
             shareLink = "https://music.youtube.com/channel/${artistPage.artist.id}",
             gradientColors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)

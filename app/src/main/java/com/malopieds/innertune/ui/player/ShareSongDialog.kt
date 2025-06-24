@@ -79,6 +79,7 @@ fun ShareSongDialog(
 
     // Unified state for background selection. Can hold a List<Color> for gradients or a Color for solids.
     var selectedBackground by remember { mutableStateOf<Any>(gradientColors) }
+    val isArtistShare = mediaMetadata.duration == 0 // Heuristic: artist shares have duration 0
 
     val backgroundBrush = remember(selectedBackground) {
         when (val selection = selectedBackground) {
@@ -110,6 +111,10 @@ fun ShareSongDialog(
             val dark = swatches.filter { it.isDark() }.take(3).map { Color(it.rgb) }
             val light = swatches.filterNot { it.isDark() }.take(3).map { Color(it.rgb) }
             paletteColors = light + dark
+            // Only auto-select a dark color for artist shares
+            if (isArtistShare && dark.isNotEmpty() && (selectedBackground == gradientColors || selectedBackground == paletteColors)) {
+                selectedBackground = dark.first()
+            }
         }
     }
 
