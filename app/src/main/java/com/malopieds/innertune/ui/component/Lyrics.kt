@@ -60,6 +60,7 @@ import com.malopieds.innertune.constants.TranslateLyricsKey
 import com.malopieds.innertune.db.entities.LyricsEntity.Companion.LYRICS_NOT_FOUND
 import com.malopieds.innertune.lyrics.LyricsEntry
 import com.malopieds.innertune.lyrics.LyricsEntry.Companion.HEAD_LYRICS_ENTRY
+import com.malopieds.innertune.lyrics.LyricsUtils
 import com.malopieds.innertune.lyrics.LyricsUtils.findCurrentLineIndex
 import com.malopieds.innertune.lyrics.LyricsUtils.parseLyrics
 import com.malopieds.innertune.ui.component.shimmer.ShimmerHost
@@ -73,6 +74,13 @@ import com.malopieds.innertune.utils.rememberPreference
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlin.time.Duration.Companion.seconds
+import com.malopieds.innertune.ui.player.ShareLyricsDialog
+import coil.ImageLoader
+import coil.request.ImageRequest
+import android.graphics.drawable.BitmapDrawable
+import com.malopieds.innertune.ui.theme.extractGradientColors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun Lyrics(
@@ -132,7 +140,35 @@ fun Lyrics(
     var isSeeking by remember {
         mutableStateOf(false)
     }
-    val playerBackground by rememberEnumPreference(key = PlayerBackgroundStyleKey, defaultValue = PlayerBackgroundStyle.DEFAULT)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val isSystemInDarkThemeValue = androidx.compose.foundation.isSystemInDarkTheme()
+    val themePrimary = MaterialTheme.colorScheme.primary
+    val themeSecondary = MaterialTheme.colorScheme.secondary
+    var gradientColors by remember { mutableStateOf<List<Color>>(listOf(themePrimary, themeSecondary)) }
+    val darkTheme by rememberEnumPreference(com.malopieds.innertune.constants.DarkModeKey, defaultValue = com.malopieds.innertune.ui.screens.settings.DarkMode.AUTO)
+    val playerBackground by rememberEnumPreference(PlayerBackgroundStyleKey, defaultValue = PlayerBackgroundStyle.GRADIENT)
+    val currentMediaMetadata = mediaMetadata
+    LaunchedEffect(currentMediaMetadata, playerBackground, darkTheme, isSystemInDarkThemeValue, themePrimary, themeSecondary) {
+        if (playerBackground == PlayerBackgroundStyle.GRADIENT && currentMediaMetadata?.thumbnailUrl != null) {
+            val result = withContext(Dispatchers.IO) {
+                val drawable = ImageLoader(context)
+                    .execute(
+                        ImageRequest.Builder(context)
+                            .data(currentMediaMetadata.thumbnailUrl)
+                            .allowHardware(false)
+                            .build()
+                    ).drawable as? BitmapDrawable
+                drawable?.bitmap?.extractGradientColors(
+                    darkTheme == com.malopieds.innertune.ui.screens.settings.DarkMode.ON || (darkTheme == com.malopieds.innertune.ui.screens.settings.DarkMode.AUTO && isSystemInDarkThemeValue)
+                )
+            }
+            if (!result.isNullOrEmpty()) {
+                gradientColors = result
+            }
+        } else {
+            gradientColors = listOf(themePrimary, themeSecondary)
+        }
+    }
 
     LaunchedEffect(lyrics) {
         if (lyrics.isNullOrEmpty() || !lyrics.startsWith("[")) {
@@ -298,6 +334,20 @@ fun Lyrics(
         }
 
         mediaMetadata?.let { mediaMetadata ->
+            var showShareLyricsDialog by remember { mutableStateOf(false) }
+            if (showShareLyricsDialog && !lyrics.isNullOrEmpty()) {
+                val shareableLyrics = if (lyrics.startsWith("[")) {
+                    LyricsUtils.parseLyrics(lyrics).joinToString("\n") { it.text }
+                } else {
+                    lyrics
+                }
+                ShareLyricsDialog(
+                    lyrics = shareableLyrics,
+                    mediaMetadata = mediaMetadata,
+                    onDismiss = { showShareLyricsDialog = false },
+                    gradientColors = gradientColors
+                )
+            }
             Row(
                 modifier =
                     Modifier
@@ -317,7 +367,16 @@ fun Lyrics(
                         )
                     }
                 }
-
+                if (!lyrics.isNullOrEmpty()) {
+                    IconButton(
+                        onClick = { showShareLyricsDialog = true },
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.share),
+                            contentDescription = "Share Lyrics",
+                        )
+                    }
+                }
                 IconButton(
                     onClick = {
                         menuState.show {

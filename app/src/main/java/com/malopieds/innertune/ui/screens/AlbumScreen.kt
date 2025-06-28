@@ -502,6 +502,7 @@ fun AlbumScreen(
                                                     ListQueue(
                                                         title = albumWithSongs.album.title,
                                                         items = albumWithSongs.songs.map { it.toMediaItem() },
+                                                        startIndex = index,
                                                     ),
                                                 )
                                             }
