@@ -91,3 +91,13 @@ lint/tmp/
 .kotlin
 app/foss
 output-metadata.json
+
+# Devenv
+.devenv*
+devenv.local.nix
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml
