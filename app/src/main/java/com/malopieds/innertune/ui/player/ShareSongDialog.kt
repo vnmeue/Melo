@@ -149,10 +149,10 @@ fun ShareSongDialog(
                             .aspectRatio(1f)
                             .clip(RoundedCornerShape(16.dp))
                             .background(backgroundBrush),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.CenterEnd
                     ) {
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
+                            horizontalAlignment = Alignment.End,
                             modifier = Modifier.padding(16.dp)
                         ) {
                             if (squareBitmap != null) {
@@ -172,17 +172,20 @@ fun ShareSongDialog(
                                 )
                             }
                             Spacer(Modifier.height(16.dp))
+                            // Removed explicit icon from share preview
                             Text(
                                 text = mediaMetadata.title,
                                 style = MaterialTheme.typography.titleLarge,
                                 color = textColor,
-                                maxLines = 2
+                                maxLines = 2,
+                                textAlign = TextAlign.Right
                             )
                             Text(
                                 text = artistNames,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = textColor.copy(alpha = 0.8f),
-                                maxLines = 1
+                                maxLines = 1,
+                                textAlign = TextAlign.Right
                             )
                         }
                     }

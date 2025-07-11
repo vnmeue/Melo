@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
+import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -49,6 +50,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -189,30 +192,42 @@ fun AlbumScreen(
                                 fontSizeRange = FontSizeRange(16.sp, 22.sp),
                             )
 
-                            val annotatedString =
-                                buildAnnotatedString {
-                                    withStyle(
-                                        style =
-                                            MaterialTheme.typography.titleMedium
-                                                .copy(
-                                                    fontWeight = FontWeight.Normal,
-                                                    color = MaterialTheme.colorScheme.onBackground,
-                                                ).toSpanStyle(),
-                                    ) {
-                                        albumWithSongs.artists.fastForEachIndexed { index, artist ->
-                                            pushStringAnnotation(artist.id, artist.name)
-                                            append(artist.name)
-                                            pop()
-                                            if (index != albumWithSongs.artists.lastIndex) {
-                                                append(", ")
-                                            }
-                                        }
+                            val artistAnnotatedString = buildAnnotatedString {
+                                albumWithSongs.artists.fastForEachIndexed { index, artist ->
+                                    pushStringAnnotation(artist.id, artist.name)
+                                    append(artist.name)
+                                    pop()
+                                    if (index != albumWithSongs.artists.lastIndex) {
+                                        append(", ")
                                     }
                                 }
-                            ClickableText(annotatedString) { offset ->
-                                annotatedString.getStringAnnotations(offset, offset).firstOrNull()?.let { range ->
-                                    navController.navigate("artist/${range.tag}")
-                                }
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                // If you have any way to check explicit, use it here. Otherwise, remove this block.
+                                // Example: val isExplicit = albumWithSongs.songs.any { it.explicit }
+                                // If not available, just remove the explicit icon logic.
+                                // if (isExplicit) {
+                                //     Icon(
+                                //         painter = painterResource(R.drawable.explicit),
+                                //         contentDescription = "Explicit",
+                                //         tint = MaterialTheme.colorScheme.onBackground,
+                                //         modifier = Modifier.size(18.dp)
+                                //     )
+                                //     Spacer(Modifier.width(4.dp))
+                                // }
+                                ClickableText(
+                                    text = artistAnnotatedString,
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Normal,
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                    ),
+                                    onClick = { offset ->
+                                        artistAnnotatedString.getStringAnnotations(start = offset, end = offset)
+                                            .firstOrNull()?.let { range ->
+                                                navController.navigate("artist/${range.item}")
+                                            }
+                                    }
+                                )
                             }
 
                             if (albumWithSongs.album.year != null) {

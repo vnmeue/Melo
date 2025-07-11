@@ -598,12 +598,14 @@ fun BottomSheetPlayer(
                 label = "playPauseRoundness",
             )
 
+            // Title row (remove explicit icon from here)
             Row(
                 horizontalArrangement =
                     when (playerTextAlignment) {
                         PlayerTextAlignment.SIDED -> Arrangement.Start
                         PlayerTextAlignment.CENTER -> Arrangement.Center
                     },
+                verticalAlignment = Alignment.CenterVertically,
                 modifier =
                     Modifier
                         .fillMaxWidth()
@@ -634,17 +636,28 @@ fun BottomSheetPlayer(
 
             Spacer(Modifier.height(6.dp))
 
+            // Artist row (add explicit icon here)
             Row(
                 horizontalArrangement =
                     when (playerTextAlignment) {
                         PlayerTextAlignment.SIDED -> Arrangement.Start
                         PlayerTextAlignment.CENTER -> Arrangement.Center
                     },
+                verticalAlignment = Alignment.CenterVertically,
                 modifier =
                     Modifier
                         .fillMaxWidth()
                         .padding(horizontal = PlayerHorizontalPadding),
             ) {
+                if (mediaMetadata.explicit) {
+                    Icon(
+                        painter = painterResource(R.drawable.explicit),
+                        contentDescription = "Explicit",
+                        tint = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.size(32.dp).align(Alignment.CenterVertically)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                }
                 mediaMetadata.artists.fastForEachIndexed { index, artist ->
                     AnimatedContent(
                         targetState = artist.name,

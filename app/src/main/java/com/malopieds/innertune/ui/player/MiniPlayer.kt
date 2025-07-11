@@ -17,6 +17,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.aspectRatio
@@ -74,6 +75,7 @@ import kotlin.math.sin
 import kotlinx.coroutines.launch
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.graphics.graphicsLayer
 
@@ -353,14 +355,25 @@ fun MiniMediaInfo(
                 transitionSpec = { fadeIn() togetherWith fadeOut() },
                 label = "",
             ) { artists ->
-                Text(
-                    text = artists,
-                    color = MaterialTheme.colorScheme.secondary,
-                    fontSize = 12.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.basicMarquee(),
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (mediaMetadata.explicit) {
+                        Icon(
+                            painter = painterResource(R.drawable.explicit),
+                            contentDescription = "Explicit",
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(18.dp).align(Alignment.CenterVertically)
+                        )
+                        Spacer(Modifier.width(2.dp))
+                    }
+                    Text(
+                        text = artists,
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.basicMarquee(),
+                    )
+                }
             }
         }
     }

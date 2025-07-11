@@ -133,10 +133,10 @@ fun ShareLyricsDialog(
                             .aspectRatio(0.7f)
                             .clip(RoundedCornerShape(16.dp))
                             .background(backgroundBrush),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.CenterEnd
                     ) {
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
+                            horizontalAlignment = Alignment.End,
                             modifier = Modifier
                                 .padding(16.dp)
                                 .fillMaxHeight()
@@ -144,7 +144,7 @@ fun ShareLyricsDialog(
                             // Scrollable lyrics preview
                             LazyColumn(
                                 modifier = Modifier.weight(1f),
-                                horizontalAlignment = Alignment.CenterHorizontally,
+                                horizontalAlignment = Alignment.End,
                                 contentPadding = PaddingValues(top = 50.dp, bottom = 12.dp)
                             ) {
                                 items(visibleLines, key = { it.first }) { (idx, line) ->
