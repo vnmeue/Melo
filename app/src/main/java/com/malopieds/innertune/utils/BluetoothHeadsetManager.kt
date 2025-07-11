@@ -16,6 +16,9 @@ class BluetoothHeadsetManager(private val context: Context) {
     private val _isHeadsetConnected = MutableStateFlow(false)
     val isHeadsetConnected: StateFlow<Boolean> = _isHeadsetConnected
 
+    private val _connectedHeadsetName = MutableStateFlow<String?>(null)
+    val connectedHeadsetName: StateFlow<String?> = _connectedHeadsetName
+
     private val profileListener = object : BluetoothProfile.ServiceListener {
         override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
             if (profile == BluetoothProfile.HEADSET) {
@@ -28,6 +31,7 @@ class BluetoothHeadsetManager(private val context: Context) {
             if (profile == BluetoothProfile.HEADSET) {
                 bluetoothHeadset = null
                 _isHeadsetConnected.value = false
+                _connectedHeadsetName.value = null
             }
         }
     }
@@ -52,9 +56,11 @@ class BluetoothHeadsetManager(private val context: Context) {
             bluetoothHeadset?.let { headset ->
                 val connectedDevices = headset.connectedDevices
                 _isHeadsetConnected.value = connectedDevices.isNotEmpty()
+                _connectedHeadsetName.value = connectedDevices.firstOrNull()?.name
             }
         } catch (e: SecurityException) {
             _isHeadsetConnected.value = false
+            _connectedHeadsetName.value = null
         }
     }
 

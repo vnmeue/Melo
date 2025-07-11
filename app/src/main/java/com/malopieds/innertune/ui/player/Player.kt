@@ -140,6 +140,7 @@ import kotlinx.coroutines.withContext
 import me.saket.squiggles.SquigglySlider
 import java.time.LocalDateTime
 import kotlin.math.roundToInt
+import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -727,6 +728,20 @@ fun BottomSheetPlayer(
                             else 
                                 MaterialTheme.colorScheme.onSecondaryContainer
                         ),
+                    )
+                }
+                val headsetName by bluetoothHeadsetManager.connectedHeadsetName.collectAsState()
+                if (isHeadsetConnected && !headsetName.isNullOrBlank()) {
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = headsetName!!,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        ),
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
 
