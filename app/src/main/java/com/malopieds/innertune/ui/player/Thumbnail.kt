@@ -119,7 +119,7 @@ fun Thumbnail(
                     AsyncImage(
                         model = nextMetadata.thumbnailUrl,
                         contentDescription = null,
-                        contentScale = ContentScale.Crop,
+                        contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .offset(x = 32.dp)
                             .fillMaxWidth(0.85f)
@@ -132,7 +132,7 @@ fun Thumbnail(
                 AsyncImage(
                     model = mediaMetadata?.thumbnailUrl,
                     contentDescription = null,
-                    contentScale = ContentScale.Crop,
+                    contentScale = ContentScale.Fit,
                     modifier =
                         Modifier
                             .offset { 
