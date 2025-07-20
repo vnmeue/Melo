@@ -111,6 +111,7 @@ import com.malopieds.innertune.constants.ShowLyricsKey
 import com.malopieds.innertune.constants.SliderStyle
 import com.malopieds.innertune.constants.SliderStyleKey
 import com.malopieds.innertune.constants.ThumbnailCornerRadius
+import com.malopieds.innertune.constants.ShowHeadsetNameKey
 import com.malopieds.innertune.db.entities.PlaylistSongMap
 import com.malopieds.innertune.extensions.togglePlayPause
 import com.malopieds.innertune.models.MediaMetadata
@@ -564,6 +565,8 @@ fun BottomSheetPlayer(
         }
     }
 
+    val showHeadsetName by rememberPreference(ShowHeadsetNameKey, defaultValue = false)
+
     BottomSheet(
         state = state,
         modifier = modifier,
@@ -731,7 +734,7 @@ fun BottomSheetPlayer(
                     )
                 }
                 val headsetName by bluetoothHeadsetManager.connectedHeadsetName.collectAsState()
-                if (isHeadsetConnected && !headsetName.isNullOrBlank()) {
+                if (isHeadsetConnected && !headsetName.isNullOrBlank() && showHeadsetName) {
                     Spacer(Modifier.width(8.dp))
                     Text(
                         text = headsetName!!,

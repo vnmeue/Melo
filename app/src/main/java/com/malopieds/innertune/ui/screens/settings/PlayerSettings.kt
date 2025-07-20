@@ -25,6 +25,7 @@ import com.malopieds.innertune.constants.AudioQualityKey
 import com.malopieds.innertune.constants.AutoSkipNextOnErrorKey
 import com.malopieds.innertune.constants.PersistentQueueKey
 import com.malopieds.innertune.constants.SkipSilenceKey
+import com.malopieds.innertune.constants.ShowHeadsetNameKey
 import com.malopieds.innertune.constants.StopMusicOnTaskClearKey
 import com.malopieds.innertune.ui.component.EnumListPreference
 import com.malopieds.innertune.ui.component.IconButton
@@ -45,6 +46,7 @@ fun PlayerSettings(
     val (audioNormalization, onAudioNormalizationChange) = rememberPreference(AudioNormalizationKey, defaultValue = true)
     val (autoSkipNextOnError, onAutoSkipNextOnErrorChange) = rememberPreference(AutoSkipNextOnErrorKey, defaultValue = false)
     val (stopMusicOnTaskClear, onStopMusicOnTaskClearChange) = rememberPreference(StopMusicOnTaskClearKey, defaultValue = false)
+    val (showHeadsetName, onShowHeadsetNameChange) = rememberPreference(ShowHeadsetNameKey, defaultValue = false)
 
     Column(
         Modifier
@@ -97,6 +99,13 @@ fun PlayerSettings(
             icon = { Icon(painterResource(R.drawable.clear_all), null) },
             checked = stopMusicOnTaskClear,
             onCheckedChange = onStopMusicOnTaskClearChange,
+        )
+        SwitchPreference(
+            title = { Text(stringResource(R.string.show_headset_name)) },
+            description = stringResource(R.string.show_headset_name_desc),
+            icon = { Icon(painterResource(R.drawable.earphone), null) },
+            checked = showHeadsetName,
+            onCheckedChange = onShowHeadsetNameChange,
         )
     }
 

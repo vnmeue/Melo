@@ -461,3 +461,4 @@ val CountryCodeToName =
     )
 
 val WelcomeDialogShownKey = booleanPreferencesKey("welcomeDialogShown")
+val ShowHeadsetNameKey = booleanPreferencesKey("showHeadsetName")
