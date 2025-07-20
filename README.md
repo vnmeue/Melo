@@ -18,8 +18,6 @@ Melo is a music application for Android.
 - **Discord integration:** Show your listening status with Rich Presence
 - **Multilingual:** App supports multiple languages
 
-<sub>This app is a fork of another project which was a fork of someone else's.</sub>
-
 ## License
 
 This project is licensed under the terms of the [GNU General Public License v3.0 (GPL-3.0)](LICENSE).
