@@ -27,8 +27,10 @@ import com.malopieds.innertune.utils.dataStore
 import com.malopieds.innertune.utils.get
 import com.malopieds.innertune.utils.reportException
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -40,6 +42,9 @@ import java.util.Locale
 class App :
     Application(),
     ImageLoaderFactory {
+    // Define an application-wide CoroutineScope
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
     @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate() {
         super.onCreate()
@@ -73,7 +78,7 @@ class App :
             }
         }
 
-        GlobalScope.launch {
+        applicationScope.launch {
             dataStore.data
                 .map { it[VisitorDataKey] }
                 .distinctUntilChanged()
@@ -87,7 +92,7 @@ class App :
                         } ?: YouTube.DEFAULT_VISITOR_DATA
                 }
         }
-        GlobalScope.launch {
+        applicationScope.launch {
             dataStore.data
                 .map { it[InnerTubeCookieKey] }
                 .distinctUntilChanged()

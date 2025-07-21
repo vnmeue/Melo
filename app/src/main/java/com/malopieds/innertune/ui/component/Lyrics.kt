@@ -176,7 +176,7 @@ fun Lyrics(
             return@LaunchedEffect
         }
         while (isActive) {
-            delay(50)
+            delay(150)
             val sliderPosition = sliderPositionProvider()
             isSeeking = sliderPosition != null
             currentLineIndex = findCurrentLineIndex(lines, sliderPosition ?: playerConnection.player.currentPosition)

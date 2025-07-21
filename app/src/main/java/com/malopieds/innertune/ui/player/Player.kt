@@ -169,7 +169,7 @@ private fun PlayerProgressBar(
     LaunchedEffect(playbackState) {
         if (playbackState == STATE_READY) {
             while (isActive) {
-                delay(100)
+                delay(250)
                 position = playerConnection.player.currentPosition
             }
         }
