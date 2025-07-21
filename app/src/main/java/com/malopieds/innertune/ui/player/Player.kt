@@ -118,6 +118,7 @@ import com.malopieds.innertune.db.entities.PlaylistSongMap
 import com.malopieds.innertune.extensions.togglePlayPause
 import com.malopieds.innertune.models.MediaMetadata
 import com.malopieds.innertune.playback.ExoDownloadService
+import com.malopieds.innertune.playback.PlayerConnection
 import com.malopieds.innertune.ui.component.BottomSheet
 import com.malopieds.innertune.ui.component.BottomSheetState
 import com.malopieds.innertune.ui.component.ListDialog
@@ -144,6 +145,104 @@ import me.saket.squiggles.SquigglySlider
 import java.time.LocalDateTime
 import kotlin.math.roundToInt
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.runtime.rememberUpdatedState
+import java.util.concurrent.ConcurrentHashMap
+import androidx.compose.ui.zIndex
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PlayerProgressBar(
+    playerConnection: PlayerConnection, // pass the connection
+    duration: Long,
+    onSeek: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+    sliderStyle: SliderStyle,
+    onBackgroundColor: Color
+) {
+    val playbackState by playerConnection.playbackState.collectAsState()
+    val isPlaying by playerConnection.isPlaying.collectAsState()
+    var sliderPosition by remember { mutableStateOf<Long?>(null) }
+    var position by remember { mutableLongStateOf(playerConnection.player.currentPosition) }
+    val durationState by rememberUpdatedState(duration)
+
+    // Only this composable updates position every 100ms
+    LaunchedEffect(playbackState) {
+        if (playbackState == STATE_READY) {
+            while (isActive) {
+                delay(100)
+                position = playerConnection.player.currentPosition
+            }
+        }
+    }
+
+    when (sliderStyle) {
+        SliderStyle.SQUIGGLY -> {
+            SquigglySlider(
+                value = (sliderPosition ?: position).toFloat(),
+                valueRange = 0f..(if (durationState == C.TIME_UNSET) 0f else durationState.toFloat()),
+                onValueChange = {
+                    sliderPosition = it.toLong()
+                },
+                onValueChangeFinished = {
+                    sliderPosition?.let {
+                        onSeek(it)
+                    }
+                    sliderPosition = null
+                },
+                modifier = modifier
+                    .padding(horizontal = PlayerHorizontalPadding / 2)
+                    .height(12.dp),
+                squigglesSpec =
+                    SquigglySlider.SquigglesSpec(
+                        amplitude = if (isPlaying) (4.dp).coerceAtLeast(4.dp) else 0.dp,
+                        strokeWidth = 6.dp,
+                    ),
+            )
+        }
+        SliderStyle.DEFAULT -> {
+            Slider(
+                value = (sliderPosition ?: position).toFloat(),
+                valueRange = 0f..(if (durationState == C.TIME_UNSET) 0f else durationState.toFloat()),
+                onValueChange = {
+                    sliderPosition = it.toLong()
+                },
+                onValueChangeFinished = {
+                    sliderPosition?.let {
+                        onSeek(it)
+                    }
+                    sliderPosition = null
+                },
+                modifier = modifier
+                    .padding(horizontal = PlayerHorizontalPadding / 2)
+                    .height(12.dp),
+            )
+        }
+    }
+    Spacer(Modifier.height(4.dp))
+    Row(
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = PlayerHorizontalPadding + 4.dp),
+    ) {
+        Text(
+            text = makeTimeString(sliderPosition ?: position),
+            style = MaterialTheme.typography.labelMedium,
+            color = onBackgroundColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = if (durationState != C.TIME_UNSET) makeTimeString(durationState) else "",
+            style = MaterialTheme.typography.labelMedium,
+            color = onBackgroundColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -175,27 +274,17 @@ fun BottomSheetPlayer(
 
     val playerTextAlignment by rememberEnumPreference(PlayerTextAlignmentKey, PlayerTextAlignment.SIDED)
 
-    val playbackState by playerConnection.playbackState.collectAsState()
-    val isPlaying by playerConnection.isPlaying.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val currentSong by playerConnection.currentSong.collectAsState(initial = null)
     val automix by playerConnection.service.automixItems.collectAsState()
-
-    val canSkipPrevious by playerConnection.canSkipPrevious.collectAsState()
     val canSkipNext by playerConnection.canSkipNext.collectAsState()
 
     var showLyrics by rememberPreference(ShowLyricsKey, defaultValue = false)
 
     val sliderStyle by rememberEnumPreference(SliderStyleKey, SliderStyle.SQUIGGLY)
 
-    var position by rememberSaveable(playbackState) {
-        mutableLongStateOf(playerConnection.player.currentPosition)
-    }
-    var duration by rememberSaveable(playbackState) {
+    var duration by rememberSaveable(playerConnection.player.duration) {
         mutableLongStateOf(playerConnection.player.duration)
-    }
-    var sliderPosition by remember {
-        mutableStateOf<Long?>(null)
     }
 
     var gradientColors by remember {
@@ -219,28 +308,36 @@ fun BottomSheetPlayer(
         playerConnection.service.addToQueueAutomix(automix[0], 0)
     }
 
-    LaunchedEffect(mediaMetadata, playerBackground, darkTheme, useBlackBackground) {
+    val gradientCache = remember { ConcurrentHashMap<String, List<Color>>() }
+    val thumbnailUrl = mediaMetadata?.thumbnailUrl
+
+    LaunchedEffect(thumbnailUrl, playerBackground, darkTheme, useBlackBackground) {
         if (useBlackBackground) {
             gradientColors = listOf(Color.Black, Color.Black)
-        } else if (playerBackground == PlayerBackgroundStyle.GRADIENT) {
-            withContext(Dispatchers.IO) {
-                val result =
-                    (
-                        ImageLoader(context)
-                            .execute(
-                                ImageRequest
-                                    .Builder(context)
-                                    .data(mediaMetadata?.thumbnailUrl)
-                                    .allowHardware(false)
-                                    .build(),
-                            ).drawable as? BitmapDrawable
-                    )?.bitmap?.extractGradientColors(
-                        darkTheme =
-                            darkTheme == DarkMode.ON || (darkTheme == DarkMode.AUTO && isSystemInDarkTheme),
-                    )
-
-                result?.let {
-                    gradientColors = it
+        } else if (playerBackground == PlayerBackgroundStyle.GRADIENT && thumbnailUrl != null) {
+            val cached = gradientCache[thumbnailUrl]
+            if (cached != null) {
+                gradientColors = cached
+            } else {
+                withContext(Dispatchers.IO) {
+                    val result =
+                        (
+                            ImageLoader(context)
+                                .execute(
+                                    ImageRequest
+                                        .Builder(context)
+                                        .data(thumbnailUrl)
+                                        .allowHardware(false)
+                                        .build(),
+                                ).drawable as? BitmapDrawable
+                        )?.bitmap?.extractGradientColors(
+                            darkTheme =
+                                darkTheme == DarkMode.ON || (darkTheme == DarkMode.AUTO && isSystemInDarkTheme),
+                        )
+                    result?.let {
+                        gradientCache[thumbnailUrl] = it
+                        gradientColors = it
+                    }
                 }
             }
         } else {
@@ -466,16 +563,6 @@ fun BottomSheetPlayer(
         }
     }
 
-    LaunchedEffect(playbackState) {
-        if (playbackState == STATE_READY) {
-            while (isActive) {
-                delay(100)
-                position = playerConnection.player.currentPosition
-                duration = playerConnection.player.duration
-            }
-        }
-    }
-
     val currentFormat by playerConnection.currentFormat.collectAsState(initial = null)
 
     var showDetailsDialog by rememberSaveable {
@@ -593,12 +680,17 @@ fun BottomSheetPlayer(
         },
         collapsedContent = {
             MiniPlayer(
-                position = position,
-                duration = duration,
+                position = playerConnection.player.currentPosition,
+                duration = playerConnection.player.duration,
             )
         },
     ) {
         val controlsContent: @Composable ColumnScope.(MediaMetadata, songTitleFontSize: TextUnit) -> Unit = { mediaMetadata, songTitleFontSize ->
+            val isPlaying by playerConnection.isPlaying.collectAsState()
+            val playbackState by playerConnection.playbackState.collectAsState()
+            val canSkipPrevious by playerConnection.canSkipPrevious.collectAsState()
+            val canSkipNext by playerConnection.canSkipNext.collectAsState()
+
             val playPauseRoundness by animateDpAsState(
                 targetValue = if (isPlaying) 24.dp else 36.dp,
                 animationSpec = tween(durationMillis = 90, easing = LinearEasing),
@@ -619,10 +711,10 @@ fun BottomSheetPlayer(
                         .padding(start = PlayerHorizontalPadding, end = PlayerHorizontalPadding / 2),
             ) {
                 AnimatedContent(
-                    targetState = mediaMetadata.title,
+                    targetState = mediaMetadata.title to mediaMetadata.id,
                     transitionSpec = { fadeIn() togetherWith fadeOut() },
                     label = "",
-                ) { title ->
+                ) { (title, _) ->
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleLarge.copy(fontSize = songTitleFontSize),
@@ -667,10 +759,10 @@ fun BottomSheetPlayer(
                 }
                 mediaMetadata.artists.fastForEachIndexed { index, artist ->
                     AnimatedContent(
-                        targetState = artist.name,
+                        targetState = artist.name to (artist.id ?: artist.name),
                         transitionSpec = { fadeIn() togetherWith fadeOut() },
                         label = "",
-                    ) { name ->
+                    ) { (name, _) ->
                         Text(
                             text = name,
                             style = MaterialTheme.typography.titleMedium,
@@ -730,79 +822,13 @@ fun BottomSheetPlayer(
             Spacer(Modifier.height(12.dp))
 
             // Timeline (slider/squiggly) - make thicker and wider
-            when (sliderStyle) {
-                SliderStyle.SQUIGGLY -> {
-                    SquigglySlider(
-                        value = (sliderPosition ?: position).toFloat(),
-                        valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
-                        onValueChange = {
-                            sliderPosition = it.toLong()
-                        },
-                        onValueChangeFinished = {
-                            sliderPosition?.let {
-                                playerConnection.player.seekTo(it)
-                                position = it
-                            }
-                            sliderPosition = null
-                        },
-                        modifier = Modifier
-                            .padding(horizontal = PlayerHorizontalPadding / 2)
-                            .height(12.dp), // Thicker
-                        squigglesSpec =
-                            SquigglySlider.SquigglesSpec(
-                                amplitude = if (isPlaying) (4.dp).coerceAtLeast(4.dp) else 0.dp, // Thicker
-                                strokeWidth = 6.dp, // Thicker
-                            ),
-                    )
-                }
-
-                SliderStyle.DEFAULT -> {
-                    Slider(
-                        value = (sliderPosition ?: position).toFloat(),
-                        valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
-                        onValueChange = {
-                            sliderPosition = it.toLong()
-                        },
-                        onValueChangeFinished = {
-                            sliderPosition?.let {
-                                playerConnection.player.seekTo(it)
-                                position = it
-                            }
-                            sliderPosition = null
-                        },
-                        modifier = Modifier
-                            .padding(horizontal = PlayerHorizontalPadding / 2)
-                            .height(12.dp), // Thicker
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(4.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = PlayerHorizontalPadding + 4.dp),
-            ) {
-                Text(
-                    text = makeTimeString(sliderPosition ?: position),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = onBackgroundColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
-                Text(
-                    text = if (duration != C.TIME_UNSET) makeTimeString(duration) else "",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = onBackgroundColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+            PlayerProgressBar(
+                playerConnection = playerConnection,
+                duration = duration,
+                onSeek = { playerConnection.player.seekTo(it) },
+                sliderStyle = sliderStyle,
+                onBackgroundColor = onBackgroundColor
+            )
 
             Spacer(Modifier.height(6.dp))
 
@@ -881,7 +907,7 @@ fun BottomSheetPlayer(
                         modifier = Modifier.weight(1f),
                     ) {
                         Thumbnail(
-                            sliderPositionProvider = { sliderPosition },
+                            sliderPositionProvider = { playerConnection.player.currentPosition },
                             modifier = Modifier.nestedScroll(state.preUpPostDownNestedScrollConnection),
                             changeColor = changeColor,
                             color = onBackgroundColor,
@@ -930,16 +956,63 @@ fun BottomSheetPlayer(
                                 .background(Color.White.copy(alpha = 0.7f))
                         )
                     }
-                    Spacer(Modifier.height(18.dp))
-                    Row(
+                    Spacer(Modifier.height(8.dp))
+                    // Overlay art/lyric pill above thumbnail/lyrics area
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 16.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
+                            .height(0.dp) // No height, just overlays
                     ) {
                         Box(
                             modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = 8.dp)
+                                .zIndex(1f)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                val selectedArt = !showLyrics
+                                val selectedLyrics = showLyrics
+                                Text(
+                                    text = "Art",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = if (selectedArt) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(50))
+                                        .background(if (selectedArt) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                        .clickable { showLyrics = false }
+                                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                                )
+                                Spacer(Modifier.width(2.dp))
+                                Text(
+                                    text = "Lyrics",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = if (selectedLyrics) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(50))
+                                        .background(if (selectedLyrics) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                        .clickable { showLyrics = true }
+                                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                    // Main area for thumbnail/lyrics and floating pill
+                    val artWeight = if (playerConnection.player.mediaItemCount > 1) 1.3f else 1.7f
+                    Box(
+                        modifier = Modifier
+                            .weight(artWeight)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        // Floating art/lyric pill
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = 8.dp)
+                                .zIndex(1f)
                                 .clip(RoundedCornerShape(50))
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
                                 .padding(4.dp)
@@ -973,30 +1046,21 @@ fun BottomSheetPlayer(
                                 )
                             }
                         }
-                    }
-
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .weight(1.3f), // Make thumbnail area bigger
-                    ) {
+                        // Thumbnail or Lyrics area
                         Thumbnail(
-                            sliderPositionProvider = { sliderPosition },
+                            sliderPositionProvider = { playerConnection.player.currentPosition },
                             modifier = Modifier
-                                .nestedScroll(state.preUpPostDownNestedScrollConnection)
-                                .fillMaxWidth(1.0f), // Restore thumbnail to full width
+                                .fillMaxWidth(1.0f)
+                                .padding(top = 48.dp), // Add top padding so pill doesn't overlap content
                             changeColor = changeColor,
                             color = onBackgroundColor,
                         )
                     }
-                    Spacer(Modifier.height(4.dp))
-
                     // Move song name and artist name up by reducing vertical gap
-                    Spacer(Modifier.height(46.dp))
+                    Spacer(Modifier.height(24.dp))
                     mediaMetadata?.let {
                         controlsContent(it, 30.sp) // Pass larger font size
                     }
-
                     Spacer(Modifier.height(24.dp))
                 }
             }
