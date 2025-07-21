@@ -70,6 +70,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -773,6 +774,7 @@ fun Queue(
             modifier =
                 Modifier
                     .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f))
+                    .blur(16.dp)
                     .fillMaxWidth()
                     .height(
                         ListItemHeight +

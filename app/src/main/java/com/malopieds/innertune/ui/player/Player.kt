@@ -81,6 +81,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.ColorUtils
@@ -141,7 +143,7 @@ import kotlinx.coroutines.withContext
 import me.saket.squiggles.SquigglySlider
 import java.time.LocalDateTime
 import kotlin.math.roundToInt
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextDecoration
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -582,7 +584,8 @@ fun BottomSheetPlayer(
                         MaterialTheme.colorScheme.surfaceContainer,
                     ),
                 )
-            },
+            }
+        ,
         onDismiss = {
             playerConnection.service.clearAutomix()
             playerConnection.player.stop()
@@ -595,7 +598,7 @@ fun BottomSheetPlayer(
             )
         },
     ) {
-        val controlsContent: @Composable ColumnScope.(MediaMetadata) -> Unit = { mediaMetadata ->
+        val controlsContent: @Composable ColumnScope.(MediaMetadata, songTitleFontSize: TextUnit) -> Unit = { mediaMetadata, songTitleFontSize ->
             val playPauseRoundness by animateDpAsState(
                 targetValue = if (isPlaying) 24.dp else 36.dp,
                 animationSpec = tween(durationMillis = 90, easing = LinearEasing),
@@ -613,7 +616,7 @@ fun BottomSheetPlayer(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = PlayerHorizontalPadding),
+                        .padding(start = PlayerHorizontalPadding, end = PlayerHorizontalPadding / 2),
             ) {
                 AnimatedContent(
                     targetState = mediaMetadata.title,
@@ -622,7 +625,7 @@ fun BottomSheetPlayer(
                 ) { title ->
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleLarge.copy(fontSize = songTitleFontSize),
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -651,7 +654,7 @@ fun BottomSheetPlayer(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = PlayerHorizontalPadding),
+                        .padding(start = PlayerHorizontalPadding, end = PlayerHorizontalPadding / 2),
             ) {
                 if (mediaMetadata.explicit) {
                     Icon(
@@ -695,103 +698,26 @@ fun BottomSheetPlayer(
                         }
                     }
                 }
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.Start,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = PlayerHorizontalPadding),
-            ) {
+                Spacer(modifier = Modifier.weight(1f))
+                // Only menu button remains here
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier =
-                        Modifier
-                            .size(42.dp)
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(MaterialTheme.colorScheme.secondaryContainer)
-                            .clickable {
-                                if (BluetoothPermissionHandler.hasRequiredPermissions(context)) {
-                                    bluetoothHeadsetManager.openBluetoothSettings()
-                                } else {
-                                    permissionLauncher.launch(BluetoothPermissionHandler.getRequiredPermissions())
-                                }
-                            },
-                ) {
-                    Image(
-                        painter = painterResource(R.drawable.earphone),
-                        contentDescription = null,
-                        colorFilter = ColorFilter.tint(
-                            if (isHeadsetConnected) 
-                                MaterialTheme.colorScheme.primary 
-                            else 
-                                MaterialTheme.colorScheme.onSecondaryContainer
-                        ),
-                    )
-                }
-                val headsetName by bluetoothHeadsetManager.connectedHeadsetName.collectAsState()
-                if (isHeadsetConnected && !headsetName.isNullOrBlank() && showHeadsetName) {
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = headsetName!!,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        ),
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-
-                Spacer(Modifier.width(12.dp))
-
-                // Share button
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier =
-                        Modifier
-                            .size(42.dp)
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(MaterialTheme.colorScheme.secondaryContainer)
-                            .clickable(
-                                enabled = true,
-                                onClick = {
-                                    showShareDialog = true
-                                }
-                            ),
-                ) {
-                    Image(
-                        painter = painterResource(R.drawable.share),
-                        contentDescription = "Share",
-                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSecondaryContainer),
-                    )
-                }
-
-                Spacer(Modifier.width(12.dp))
-
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier =
-                        Modifier
-                            .size(42.dp)
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(MaterialTheme.colorScheme.secondaryContainer)
-                            .clickable {
-                                menuState.show {
-                                    PlayerMenu(
-                                        mediaMetadata = mediaMetadata,
-                                        navController = navController,
-                                        playerBottomSheetState = state,
-                                        onShowDetailsDialog = { showDetailsDialog = true },
-                                        onDismiss = menuState::dismiss,
-                                    )
-                                }
-                            },
+                    modifier = Modifier
+                        .padding(end = 12.dp)
+                        .size(42.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(MaterialTheme.colorScheme.secondaryContainer)
+                        .clickable {
+                            menuState.show {
+                                PlayerMenu(
+                                    mediaMetadata = mediaMetadata,
+                                    navController = navController,
+                                    playerBottomSheetState = state,
+                                    onShowDetailsDialog = { showDetailsDialog = true },
+                                    onDismiss = menuState::dismiss,
+                                )
+                            }
+                        },
                 ) {
                     Image(
                         painter = painterResource(R.drawable.more_horiz),
@@ -801,8 +727,9 @@ fun BottomSheetPlayer(
                 }
             }
 
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(12.dp))
 
+            // Timeline (slider/squiggly) - make thicker and wider
             when (sliderStyle) {
                 SliderStyle.SQUIGGLY -> {
                     SquigglySlider(
@@ -818,11 +745,13 @@ fun BottomSheetPlayer(
                             }
                             sliderPosition = null
                         },
-                        modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
+                        modifier = Modifier
+                            .padding(horizontal = PlayerHorizontalPadding / 2)
+                            .height(12.dp), // Thicker
                         squigglesSpec =
                             SquigglySlider.SquigglesSpec(
-                                amplitude = if (isPlaying) (2.dp).coerceAtLeast(2.dp) else 0.dp,
-                                strokeWidth = 3.dp,
+                                amplitude = if (isPlaying) (4.dp).coerceAtLeast(4.dp) else 0.dp, // Thicker
+                                strokeWidth = 6.dp, // Thicker
                             ),
                     )
                 }
@@ -841,7 +770,9 @@ fun BottomSheetPlayer(
                             }
                             sliderPosition = null
                         },
-                        modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
+                        modifier = Modifier
+                            .padding(horizontal = PlayerHorizontalPadding / 2)
+                            .height(12.dp), // Thicker
                     )
                 }
             }
@@ -875,55 +806,35 @@ fun BottomSheetPlayer(
 
             Spacer(Modifier.height(6.dp))
 
+            // Remove headphone, share, and like buttons from here
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = PlayerHorizontalPadding),
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = PlayerHorizontalPadding),
             ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    ResizableIconButton(
-                        icon = if (currentSong?.song?.liked == true) R.drawable.favorite else R.drawable.favorite_border,
-                        color = if (currentSong?.song?.liked == true) MaterialTheme.colorScheme.error else onBackgroundColor,
-                        modifier =
-                            Modifier
-                                .size(32.dp)
-                                .padding(4.dp)
-                                .align(Alignment.Center),
-                        onClick = playerConnection::toggleLike,
-                    )
-                }
-
-                Box(modifier = Modifier.weight(1f)) {
-                    ResizableIconButton(
-                        icon = R.drawable.skip_previous,
-                        enabled = canSkipPrevious,
-                        color = onBackgroundColor,
-                        modifier =
-                            Modifier
-                                .size(32.dp)
-                                .align(Alignment.Center),
-                        onClick = playerConnection::seekToPrevious,
-                    )
-                }
-
-                Spacer(Modifier.width(8.dp))
-
+                ResizableIconButton(
+                    icon = R.drawable.skip_previous,
+                    enabled = canSkipPrevious,
+                    color = onBackgroundColor,
+                    modifier = Modifier.size(56.dp),
+                    onClick = playerConnection::seekToPrevious,
+                )
+                Spacer(Modifier.width(32.dp))
                 Box(
-                    modifier =
-                        Modifier
-                            .size(72.dp)
-                            .clip(RoundedCornerShape(playPauseRoundness))
-                            .background(MaterialTheme.colorScheme.secondaryContainer)
-                            .clickable {
-                                if (playbackState == STATE_ENDED) {
-                                    playerConnection.player.seekTo(0, 0)
-                                    playerConnection.player.playWhenReady = true
-                                } else {
-                                    playerConnection.player.togglePlayPause()
-                                }
-                            },
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(playPauseRoundness))
+                        .background(MaterialTheme.colorScheme.secondaryContainer)
+                        .clickable {
+                            if (playbackState == STATE_ENDED) {
+                                playerConnection.player.seekTo(0, 0)
+                                playerConnection.player.playWhenReady = true
+                            } else {
+                                playerConnection.player.togglePlayPause()
+                            }
+                        },
                 ) {
                     Image(
                         painter =
@@ -943,38 +854,17 @@ fun BottomSheetPlayer(
                         modifier =
                             Modifier
                                 .align(Alignment.Center)
-                                .size(36.dp),
+                                .size(40.dp),
                     )
                 }
-
-                Spacer(Modifier.width(8.dp))
-
-                Box(modifier = Modifier.weight(1f)) {
-                    ResizableIconButton(
-                        icon = R.drawable.skip_next,
-                        enabled = canSkipNext,
-                        color = onBackgroundColor,
-                        modifier =
-                            Modifier
-                                .size(32.dp)
-                                .align(Alignment.Center),
-                        onClick = playerConnection::seekToNext,
-                    )
-                }
-
-                Box(modifier = Modifier.weight(1f)) {
-                    ResizableIconButton(
-                        icon = R.drawable.lyrics,
-                        color = onBackgroundColor,
-                        modifier =
-                            Modifier
-                                .size(32.dp)
-                                .padding(4.dp)
-                                .align(Alignment.Center)
-                                .alpha(if (showLyrics) 1f else 0.5f),
-                        onClick = { showLyrics = !showLyrics },
-                    )
-                }
+                Spacer(Modifier.width(32.dp))
+                ResizableIconButton(
+                    icon = R.drawable.skip_next,
+                    enabled = canSkipNext,
+                    color = onBackgroundColor,
+                    modifier = Modifier.size(56.dp),
+                    onClick = playerConnection::seekToNext,
+                )
             }
         }
 
@@ -1008,7 +898,7 @@ fun BottomSheetPlayer(
                         Spacer(Modifier.weight(1f))
 
                         mediaMetadata?.let {
-                            controlsContent(it)
+                            controlsContent(it, 30.sp)
                         }
 
                         Spacer(Modifier.weight(1f))
@@ -1024,20 +914,87 @@ fun BottomSheetPlayer(
                             .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
                             .padding(bottom = queueSheetState.collapsedBound),
                 ) {
+                    Spacer(Modifier.height(40.dp))
+                    // Drag bar (Apple Music style)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(48.dp)
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(Color.White.copy(alpha = 0.7f))
+                        )
+                    }
+                    Spacer(Modifier.height(18.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .padding(4.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                val selectedArt = !showLyrics
+                                val selectedLyrics = showLyrics
+                                Text(
+                                    text = "Art",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = if (selectedArt) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(50))
+                                        .background(if (selectedArt) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                        .clickable { showLyrics = false }
+                                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                                )
+                                Spacer(Modifier.width(2.dp))
+                                Text(
+                                    text = "Lyrics",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = if (selectedLyrics) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(50))
+                                        .background(if (selectedLyrics) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                        .clickable { showLyrics = true }
+                                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                                )
+                            }
+                        }
+                    }
+
                     Box(
                         contentAlignment = Alignment.Center,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1.3f), // Make thumbnail area bigger
                     ) {
                         Thumbnail(
                             sliderPositionProvider = { sliderPosition },
-                            modifier = Modifier.nestedScroll(state.preUpPostDownNestedScrollConnection),
+                            modifier = Modifier
+                                .nestedScroll(state.preUpPostDownNestedScrollConnection)
+                                .fillMaxWidth(1.0f), // Restore thumbnail to full width
                             changeColor = changeColor,
                             color = onBackgroundColor,
                         )
                     }
+                    Spacer(Modifier.height(4.dp))
 
+                    // Move song name and artist name up by reducing vertical gap
+                    Spacer(Modifier.height(46.dp))
                     mediaMetadata?.let {
-                        controlsContent(it)
+                        controlsContent(it, 30.sp) // Pass larger font size
                     }
 
                     Spacer(Modifier.height(24.dp))

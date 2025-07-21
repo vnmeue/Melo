@@ -169,6 +169,7 @@ fun Thumbnail(
                 sliderPositionProvider = sliderPositionProvider,
                 changeColor = changeColor,
                 color = color,
+                modifier = Modifier.fillMaxSize()
             )
         }
 

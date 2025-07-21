@@ -66,6 +66,7 @@ import com.malopieds.innertune.R
 import com.malopieds.innertune.constants.ListItemHeight
 import com.malopieds.innertune.constants.ListThumbnailSize
 import com.malopieds.innertune.constants.ThumbnailCornerRadius
+import com.malopieds.innertune.constants.ShowLyricsKey
 import com.malopieds.innertune.db.entities.PlaylistSongMap
 import com.malopieds.innertune.models.MediaMetadata
 import com.malopieds.innertune.playback.ExoDownloadService
@@ -83,6 +84,21 @@ import java.time.LocalDateTime
 import kotlin.math.log2
 import kotlin.math.pow
 import kotlin.math.round
+import com.malopieds.innertune.utils.BluetoothHeadsetManager
+import com.malopieds.innertune.utils.BluetoothPermissionHandler
+import com.malopieds.innertune.utils.rememberPreference
+import androidx.compose.ui.draw.alpha
+import com.malopieds.innertune.ui.player.ShareSongDialog
+import androidx.compose.runtime.LaunchedEffect
+import coil.ImageLoader
+import coil.request.ImageRequest
+import androidx.compose.ui.graphics.toArgb
+import com.malopieds.innertune.ui.theme.extractGradientColors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import androidx.compose.ui.graphics.Color
+import android.graphics.drawable.BitmapDrawable
+import androidx.compose.foundation.isSystemInDarkTheme
 
 @Composable
 fun PlayerMenu(
@@ -106,6 +122,16 @@ fun PlayerMenu(
     var showErrorPlaylistAddDialog by rememberSaveable { mutableStateOf(false) }
     var showSelectArtistDialog by rememberSaveable { mutableStateOf(false) }
     var showPitchTempoDialog by rememberSaveable { mutableStateOf(false) }
+    var showLyrics by rememberPreference(ShowLyricsKey, defaultValue = false)
+
+    val bluetoothHeadsetManager = remember { BluetoothHeadsetManager(context) }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions.values.all { it }) {
+            bluetoothHeadsetManager.openBluetoothSettings()
+        }
+    }
 
     // --- Drag Handle and Card-like UI ---
     Column(
@@ -126,6 +152,87 @@ fun PlayerMenu(
                     .clip(RoundedCornerShape(50))
                     .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f))
             )
+        }
+        // --- Custom actions row: Like, Headphone, Share ---
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 8.dp)
+        ) {
+            // Like (Favorite/Star) button
+            IconButton(onClick = playerConnection::toggleLike) {
+                Icon(
+                    painter = painterResource(
+                        if (librarySong?.song?.liked == true) R.drawable.favorite else R.drawable.favorite_border
+                    ),
+                    contentDescription = stringResource(
+                        if (librarySong?.song?.liked == true) R.string.remove_from_library else R.string.add_to_library
+                    ),
+                    tint = if (librarySong?.song?.liked == true) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                )
+            }
+            // Headphone button
+            IconButton(onClick = {
+                if (BluetoothPermissionHandler.hasRequiredPermissions(context)) {
+                    bluetoothHeadsetManager.openBluetoothSettings()
+                } else {
+                    permissionLauncher.launch(BluetoothPermissionHandler.getRequiredPermissions())
+                }
+            }) {
+                Icon(
+                    painter = painterResource(R.drawable.earphone),
+                    contentDescription = "Headphones", // Use a hardcoded string instead of R.string.bluetooth_headset
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            // Share as image button
+            var showShareDialog by remember { mutableStateOf(false) }
+            IconButton(onClick = { showShareDialog = true }) {
+                Icon(
+                    painter = painterResource(R.drawable.share),
+                    contentDescription = "Share as image",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            var gradientColors by remember { mutableStateOf<List<Color>>(emptyList()) }
+            val darkTheme = isSystemInDarkTheme()
+            LaunchedEffect(mediaMetadata.thumbnailUrl, darkTheme) {
+                withContext(Dispatchers.IO) {
+                    val result = (
+                        ImageLoader(context)
+                            .execute(
+                                ImageRequest
+                                    .Builder(context)
+                                    .data(mediaMetadata.thumbnailUrl)
+                                    .allowHardware(false)
+                                    .build(),
+                            ).drawable as? BitmapDrawable
+                    )?.bitmap?.extractGradientColors(darkTheme = darkTheme)
+                    result?.let {
+                        gradientColors = it
+                    }
+                }
+            }
+            if (showShareDialog) {
+                ShareSongDialog(
+                    mediaMetadata = mediaMetadata,
+                    albumArt = mediaMetadata.thumbnailUrl,
+                    onDismiss = { showShareDialog = false },
+                    shareLink = "https://music.youtube.com/watch?v=${mediaMetadata.id}",
+                    gradientColors = gradientColors
+                )
+            }
+            // Lyrics button
+            IconButton(onClick = { showLyrics = !showLyrics }) {
+                Icon(
+                    painter = painterResource(R.drawable.lyrics),
+                    contentDescription = "Lyrics",
+                    tint = if (showLyrics) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.alpha(if (showLyrics) 1f else 0.5f)
+                )
+            }
         }
         // --- Menu content below (no share, no start radio) ---
         if (isQueueTrigger != true) {
