@@ -1,8 +1,14 @@
-# Melo
+# <img src="app/src/main/res/melo.png" alt="Melo Logo" height="20" style="vertical-align: middle;"> Melo
 
-![Melo Logo](app/src/main/res/melo.png)
+<div style="display: flex; justify-content: center; gap: 50px;">
+  <img src="https://github.com/user-attachments/assets/8d10d789-0f15-4448-9654-068436481d55" width="230" />
+  <img src="https://github.com/user-attachments/assets/745f7a34-f993-4a88-9681-6060144c02a8" width="230" />
+  <img src="https://github.com/user-attachments/assets/0215f250-c313-4175-8d0b-013c4c7bcc7d" width="230" />
+  <img width="230" src="https://github.com/user-attachments/assets/258acc12-f116-4676-ba8c-7bd06fa4e15c" />
+</div>
 
-Melo is a music application for Android.
+
+## Melo is a music application for Android. (supports piracy)
 
 - **Stream and manage music** from YouTube Music and your local library
 - **Offline playback:** Download songs and playlists for offline listening
