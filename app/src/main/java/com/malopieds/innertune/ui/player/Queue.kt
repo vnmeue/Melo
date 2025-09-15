@@ -13,6 +13,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -773,8 +774,10 @@ fun Queue(
         Box(
             modifier =
                 Modifier
-                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f))
-                    .blur(16.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.25f))
+                    .border(width = 1.dp, color = Color.White.copy(alpha = 0.12f), shape = RoundedCornerShape(16.dp))
+                    .blur(20.dp)
                     .fillMaxWidth()
                     .height(
                         ListItemHeight +

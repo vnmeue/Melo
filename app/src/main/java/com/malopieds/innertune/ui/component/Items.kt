@@ -407,50 +407,48 @@ fun SongListItem(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier.size(ListThumbnailSize),
                 ) {
+                    // Always show thumbnail
+                    AsyncImage(
+                        model = song.song.thumbnailUrl,
+                        contentDescription = null,
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(ThumbnailCornerRadius)),
+                    )
+
+                    // Overlay selection check
+                    if (isSelected) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .zIndex(1000f)
+                                    .clip(RoundedCornerShape(ThumbnailCornerRadius))
+                                    .background(Color.Black.copy(alpha = 0.5f)),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.done),
+                                modifier = Modifier.align(Alignment.Center),
+                                contentDescription = null,
+                            )
+                        }
+                    }
+
+                    // If rank provided, overlay number (when not actively playing)
                     if (albumIndex != null) {
                         AnimatedVisibility(
                             visible = !isActive,
                             enter = fadeIn() + expandIn(expandFrom = Alignment.Center),
                             exit = shrinkOut(shrinkTowards = Alignment.Center) + fadeOut(),
                         ) {
-                            if (isSelected) {
-                                Icon(
-                                    painter = painterResource(R.drawable.done),
-                                    modifier = Modifier.align(Alignment.Center),
-                                    contentDescription = null,
-                                )
-                            } else {
-                                Text(
-                                    text = albumIndex.toString(),
-                                    style = MaterialTheme.typography.labelLarge,
-                                )
-                            }
+                            Text(
+                                text = albumIndex.toString(),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = Color.White,
+                                modifier = Modifier.align(Alignment.Center),
+                            )
                         }
-                    } else {
-                        if (isSelected) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxSize()
-                                        .zIndex(1000f)
-                                        .clip(RoundedCornerShape(ThumbnailCornerRadius))
-                                        .background(Color.Black.copy(alpha = 0.5f)),
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.done),
-                                    modifier = Modifier.align(Alignment.Center),
-                                    contentDescription = null,
-                                )
-                            }
-                        }
-                        AsyncImage(
-                            model = song.song.thumbnailUrl,
-                            contentDescription = null,
-                            modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(ThumbnailCornerRadius)),
-                        )
                     }
 
                     PlayingIndicatorBox(

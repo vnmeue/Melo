@@ -19,7 +19,7 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 31
-        versionName = "0.0.78"
+        versionName = "0.0.80"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -104,6 +104,8 @@ dependencies {
 
     implementation(libs.viewmodel)
     implementation(libs.viewmodel.compose)
+    implementation(libs.runtime.compose)
+    implementation(libs.runtime.compose)
 
     implementation(libs.material3)
     implementation(libs.palette)
