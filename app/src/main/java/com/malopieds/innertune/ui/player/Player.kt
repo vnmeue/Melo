@@ -55,6 +55,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -159,8 +160,8 @@ private fun PlayerProgressBar(
     sliderStyle: SliderStyle,
     onBackgroundColor: Color
 ) {
-    val playbackState by playerConnection.playbackState.collectAsState()
-    val isPlaying by playerConnection.isPlaying.collectAsState()
+    val playbackState by playerConnection.playbackState.collectAsStateWithLifecycle()
+    val isPlaying by playerConnection.isPlaying.collectAsStateWithLifecycle()
     var sliderPosition by remember { mutableStateOf<Long?>(null) }
     var position by remember { mutableLongStateOf(playerConnection.player.currentPosition) }
     val durationState by rememberUpdatedState(duration)
@@ -255,7 +256,7 @@ fun BottomSheetPlayer(
     val database = LocalDatabase.current
     val menuState = LocalMenuState.current
     val bluetoothHeadsetManager = remember { BluetoothHeadsetManager(context) }
-    val isHeadsetConnected by bluetoothHeadsetManager.isHeadsetConnected.collectAsState()
+    val isHeadsetConnected by bluetoothHeadsetManager.isHeadsetConnected.collectAsStateWithLifecycle()
 
     val clipboardManager = LocalClipboardManager.current
 
@@ -274,10 +275,10 @@ fun BottomSheetPlayer(
 
     val playerTextAlignment by rememberEnumPreference(PlayerTextAlignmentKey, PlayerTextAlignment.SIDED)
 
-    val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
-    val currentSong by playerConnection.currentSong.collectAsState(initial = null)
-    val automix by playerConnection.service.automixItems.collectAsState()
-    val canSkipNext by playerConnection.canSkipNext.collectAsState()
+    val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
+    val currentSong by playerConnection.currentSong.collectAsStateWithLifecycle(initialValue = null)
+    val automix by playerConnection.service.automixItems.collectAsStateWithLifecycle()
+    val canSkipNext by playerConnection.canSkipNext.collectAsStateWithLifecycle()
 
     var showLyrics by rememberPreference(ShowLyricsKey, defaultValue = false)
 
@@ -563,7 +564,7 @@ fun BottomSheetPlayer(
         }
     }
 
-    val currentFormat by playerConnection.currentFormat.collectAsState(initial = null)
+    val currentFormat by playerConnection.currentFormat.collectAsStateWithLifecycle(initialValue = null)
 
     var showDetailsDialog by rememberSaveable {
         mutableStateOf(false)
@@ -656,6 +657,12 @@ fun BottomSheetPlayer(
 
     val showHeadsetName by rememberPreference(ShowHeadsetNameKey, defaultValue = false)
 
+    // Keep duration in sync with the player to ensure seeking works reliably
+    val outerPlaybackState by playerConnection.playbackState.collectAsStateWithLifecycle()
+    LaunchedEffect(outerPlaybackState, mediaMetadata) {
+        duration = playerConnection.player.duration
+    }
+
     BottomSheet(
         state = state,
         modifier = modifier,
@@ -674,9 +681,7 @@ fun BottomSheetPlayer(
             }
         ,
         onDismiss = {
-            playerConnection.service.clearAutomix()
-            playerConnection.player.stop()
-            playerConnection.player.clearMediaItems()
+            // Do not stop playback on dismiss; just close the sheet
         },
         collapsedContent = {
             MiniPlayer(
@@ -686,10 +691,10 @@ fun BottomSheetPlayer(
         },
     ) {
         val controlsContent: @Composable ColumnScope.(MediaMetadata, songTitleFontSize: TextUnit) -> Unit = { mediaMetadata, songTitleFontSize ->
-            val isPlaying by playerConnection.isPlaying.collectAsState()
-            val playbackState by playerConnection.playbackState.collectAsState()
-            val canSkipPrevious by playerConnection.canSkipPrevious.collectAsState()
-            val canSkipNext by playerConnection.canSkipNext.collectAsState()
+            val isPlaying by playerConnection.isPlaying.collectAsStateWithLifecycle()
+            val playbackState by playerConnection.playbackState.collectAsStateWithLifecycle()
+            val canSkipPrevious by playerConnection.canSkipPrevious.collectAsStateWithLifecycle()
+            val canSkipNext by playerConnection.canSkipNext.collectAsStateWithLifecycle()
 
             val playPauseRoundness by animateDpAsState(
                 targetValue = if (isPlaying) 24.dp else 36.dp,

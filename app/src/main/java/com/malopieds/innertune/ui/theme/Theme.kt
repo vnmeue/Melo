@@ -67,36 +67,29 @@ fun Bitmap.extractThemeColor(): Color {
 
 // from OuterTune
 fun Bitmap.extractGradientColors(darkTheme: Boolean): List<Color> {
+    // Prefer darker, salient colors irrespective of theme to ensure readable overlays.
     val extractedColors =
         Palette
             .from(this)
-            .maximumColorCount(16)
+            .maximumColorCount(24)
             .generate()
             .swatches
             .associate { it.rgb to it.population }
 
-    val orderedColors =
-        if (darkTheme) {
-            Score
-                .order(extractedColors)
-                .sortedBy { Color(it).luminance() }
-                .take(2)
-                .reversed()
-        } else {
-            Score
-                .order(extractedColors)
-                .sortedByDescending { Color(it).luminance() }
-                .take(2)
-        }
+    // Order by salience, then keep the darkest two, filtering out bright tones.
+    val luminanceThreshold = 0.35f
+    val darkestTwo =
+        Score
+            .order(extractedColors)
+            .sortedBy { Color(it).luminance() }
+            .map { Color(it) }
+            .filter { it.luminance() <= luminanceThreshold }
+            .take(2)
 
-    val res = mutableListOf<Color>()
-    return if (orderedColors.size >= 2) {
-        orderedColors.forEach {
-            res.add(Color(it))
-        }
-        res
-    } else {
-        emptyList()
+    return when (darkestTwo.size) {
+        2 -> darkestTwo
+        1 -> listOf(darkestTwo.first(), Color.Black)
+        else -> listOf(Color.Black, Color.Black)
     }
 }
 

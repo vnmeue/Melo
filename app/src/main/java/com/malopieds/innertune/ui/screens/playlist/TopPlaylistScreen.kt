@@ -57,6 +57,8 @@ import androidx.media3.exoplayer.offline.Download
 import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.malopieds.innertune.LocalDownloadUtil
 import com.malopieds.innertune.LocalPlayerAwareWindowInsets
 import com.malopieds.innertune.LocalPlayerConnection
@@ -213,15 +215,30 @@ fun TopPlaylistScreen(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.trending_up),
-                                    contentDescription = null,
-                                    tint = LocalContentColor.current.copy(alpha = 0.8f),
-                                    modifier =
-                                        Modifier
-                                            .size(AlbumThumbnailSize)
-                                            .clip(RoundedCornerShape(ThumbnailCornerRadius)),
-                                )
+                                val headerThumb = songs?.firstOrNull()?.song?.thumbnailUrl
+                                if (headerThumb != null) {
+                                    AsyncImage(
+                                        model = ImageRequest.Builder(LocalContext.current)
+                                            .data(headerThumb)
+                                            .crossfade(true)
+                                            .build(),
+                                        contentDescription = null,
+                                        modifier =
+                                            Modifier
+                                                .size(AlbumThumbnailSize)
+                                                .clip(RoundedCornerShape(ThumbnailCornerRadius)),
+                                    )
+                                } else {
+                                    Icon(
+                                        painter = painterResource(R.drawable.trending_up),
+                                        contentDescription = null,
+                                        tint = LocalContentColor.current.copy(alpha = 0.8f),
+                                        modifier =
+                                            Modifier
+                                                .size(AlbumThumbnailSize)
+                                                .clip(RoundedCornerShape(ThumbnailCornerRadius)),
+                                    )
+                                }
 
                                 Column(
                                     verticalArrangement = Arrangement.Center,
