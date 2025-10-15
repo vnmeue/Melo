@@ -2,6 +2,10 @@ package com.malopieds.innertune.ui.screens.search
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.add
@@ -15,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,6 +31,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -64,6 +71,7 @@ import com.malopieds.innertune.ui.menu.YouTubePlaylistMenu
 import com.malopieds.innertune.ui.menu.YouTubeSongMenu
 import com.malopieds.innertune.viewmodels.OnlineSearchViewModel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.flowOf
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -72,10 +80,10 @@ fun OnlineSearchResult(
     viewModel: OnlineSearchViewModel = hiltViewModel(),
 ) {
     val menuState = LocalMenuState.current
-    val playerConnection = LocalPlayerConnection.current ?: return
+    val playerConnection = LocalPlayerConnection.current
     val haptic = LocalHapticFeedback.current
-    val isPlaying by playerConnection.isPlaying.collectAsState()
-    val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
+    val isPlaying by (playerConnection?.isPlaying ?: flowOf(false)).collectAsState(initial = false)
+    val mediaMetadata by (playerConnection?.mediaMetadata ?: flowOf(null)).collectAsState(initial = null)
 
     val coroutineScope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState()
@@ -88,6 +96,22 @@ fun OnlineSearchResult(
                 viewModel.viewStateMap[it]
             }
         }
+    }
+
+    val songCount = remember(searchSummary) {
+        if (searchSummary == null) 0 else searchSummary.summaries.filter { it.title.contains("song", ignoreCase = true) }.sumOf { it.items.size }
+    }
+    val videoCount = remember(searchSummary) {
+        if (searchSummary == null) 0 else searchSummary.summaries.filter { it.title.contains("video", ignoreCase = true) }.sumOf { it.items.size }
+    }
+    val albumCount = remember(searchSummary) {
+        if (searchSummary == null) 0 else searchSummary.summaries.filter { it.title.contains("album", ignoreCase = true) }.sumOf { it.items.size }
+    }
+    val artistCount = remember(searchSummary) {
+        if (searchSummary == null) 0 else searchSummary.summaries.filter { it.title.contains("artist", ignoreCase = true) }.sumOf { it.items.size }
+    }
+    val playlistCount = remember(searchSummary) {
+        if (searchSummary == null) 0 else searchSummary.summaries.filter { it.title.contains("playlist", ignoreCase = true) }.sumOf { it.items.size }
     }
 
     LaunchedEffect(lazyListState) {
@@ -156,13 +180,15 @@ fun OnlineSearchResult(
                 Modifier
                     .combinedClickable(
                         onClick = {
-                            when (item) {
+            when (item) {
                                 is SongItem -> {
-                                    if (item.id == mediaMetadata?.id) {
-                                        playerConnection.player.togglePlayPause()
-                                    } else {
-                                        playerConnection.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id), item.toMediaMetadata()))
-                                    }
+                    if (playerConnection != null) {
+                        if (item.id == mediaMetadata?.id) {
+                            playerConnection.player.togglePlayPause()
+                        } else {
+                            playerConnection.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id), item.toMediaMetadata()))
+                        }
+                    }
                                 }
 
                                 is AlbumItem -> navController.navigate("album/${item.id}")
@@ -179,30 +205,16 @@ fun OnlineSearchResult(
         state = lazyListState,
         contentPadding =
             LocalPlayerAwareWindowInsets.current
-                .add(WindowInsets(top = SearchFilterHeight))
+                .add(WindowInsets(top = 0))
                 .asPaddingValues(),
     ) {
         if (searchFilter == null) {
-            searchSummary?.summaries?.forEach { summary ->
-                item {
-                    NavigationTitle(summary.title)
-                }
-
-                items(
-                    items = summary.items,
-                    key = { "${summary.title}/${it.id}" },
-                    itemContent = ytItemContent,
-                )
-            }
-
-            if (searchSummary?.summaries?.isEmpty() == true) {
-                item {
-                    EmptyPlaceholder(
-                        icon = R.drawable.search,
-                        text = stringResource(R.string.no_results_found),
-                    )
-                }
-            }
+            // When no filter, fall back to showing only songs
+            items(
+                items = searchSummary?.summaries?.flatMap { it.items }?.filterIsInstance<SongItem>().orEmpty(),
+                key = { it.id },
+                itemContent = ytItemContent,
+            )
         } else {
             items(
                 items = itemsPage?.items.orEmpty(),
@@ -241,29 +253,5 @@ fun OnlineSearchResult(
         }
     }
 
-    ChipsRow(
-        chips =
-            listOf(
-                null to stringResource(R.string.filter_all),
-                FILTER_SONG to stringResource(R.string.filter_songs),
-                FILTER_VIDEO to stringResource(R.string.filter_videos),
-                FILTER_ALBUM to stringResource(R.string.filter_albums),
-                FILTER_ARTIST to stringResource(R.string.filter_artists),
-                FILTER_COMMUNITY_PLAYLIST to stringResource(R.string.filter_community_playlists),
-                FILTER_FEATURED_PLAYLIST to stringResource(R.string.filter_featured_playlists),
-            ),
-        currentValue = searchFilter,
-        onValueUpdate = {
-            if (viewModel.filter.value != it) {
-                viewModel.filter.value = it
-            }
-            coroutineScope.launch {
-                lazyListState.animateScrollToItem(0)
-            }
-        },
-        modifier =
-            Modifier
-                .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top))
-                .padding(top = AppBarHeight),
-    )
+    // Removed top chips row to show songs-only view after search
 }

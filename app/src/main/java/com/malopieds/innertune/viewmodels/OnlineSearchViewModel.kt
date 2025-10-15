@@ -9,6 +9,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.malopieds.innertube.YouTube
+import com.malopieds.innertube.YouTube.SearchFilter.Companion.FILTER_SONG
 import com.malopieds.innertube.models.filterExplicit
 import com.malopieds.innertube.pages.SearchSummaryPage
 import com.malopieds.innertune.constants.HideExplicitKey
@@ -30,7 +31,7 @@ class OnlineSearchViewModel
         savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
         val query = savedStateHandle.get<String>("query")!!
-        val filter = MutableStateFlow<YouTube.SearchFilter?>(null)
+        val filter = MutableStateFlow<YouTube.SearchFilter?>(FILTER_SONG)
         var summaryPage by mutableStateOf<SearchSummaryPage?>(null)
         val viewStateMap = mutableStateMapOf<String, ItemsPage?>()
 
