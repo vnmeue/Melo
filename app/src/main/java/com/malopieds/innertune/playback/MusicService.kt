@@ -63,6 +63,7 @@ import com.malopieds.innertune.constants.AutoSkipNextOnErrorKey
 import com.malopieds.innertune.constants.DiscordTokenKey
 import com.malopieds.innertune.constants.EnableDiscordRPCKey
 import com.malopieds.innertune.constants.HideExplicitKey
+import com.malopieds.innertune.constants.AutoplayRelatedKey
 import com.malopieds.innertune.constants.HistoryDuration
 import com.malopieds.innertune.constants.MediaSessionConstants.CommandToggleLike
 import com.malopieds.innertune.constants.MediaSessionConstants.CommandToggleRepeatMode
@@ -616,7 +617,8 @@ class MusicService :
         if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT &&
             player.playbackState != STATE_IDLE &&
             player.mediaItemCount - player.currentMediaItemIndex <= 5 &&
-            currentQueue.hasNextPage()
+            currentQueue.hasNextPage() &&
+            dataStore.get(AutoplayRelatedKey, false)
         ) {
             scope.launch(SilentHandler) {
                 val mediaItems = currentQueue.nextPage().filterExplicit(dataStore.get(HideExplicitKey, false))
