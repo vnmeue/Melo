@@ -39,6 +39,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -856,14 +857,10 @@ class MainActivity : ComponentActivity() {
                             navController = navController,
                         )
 
-                        HorizontalDivider(
-                            modifier = Modifier.align(Alignment.BottomCenter),
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
-                        )
-
                         NavigationBar(
                             modifier =
                                 Modifier
+                                    .background(Color.Transparent)
                                     .align(Alignment.BottomCenter)
                                     .offset {
                                         if (navigationBarHeight == 0.dp) {
@@ -886,6 +883,8 @@ class MainActivity : ComponentActivity() {
                                             )
                                         }
                                     },
+                            containerColor = Color.Transparent,
+                            tonalElevation = 0.dp,
                         ) {
                             navigationItems.fastForEach { screen ->
                                 NavigationBarItem(
@@ -903,6 +902,9 @@ class MainActivity : ComponentActivity() {
                                             overflow = TextOverflow.Ellipsis,
                                         )
                                     },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        indicatorColor = Color.Transparent,
+                                    ),
                                     onClick = {
                                         if (navBackStackEntry?.destination?.hierarchy?.any { it.route == screen.route } == true) {
                                             navController.currentBackStackEntry?.savedStateHandle?.set("scrollToTop", true)
