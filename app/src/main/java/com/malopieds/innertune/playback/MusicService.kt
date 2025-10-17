@@ -678,28 +678,14 @@ class MusicService :
     }
 
     override fun onPlayerError(error: PlaybackException) {
-        // Keep playback flowing even when a track fails
-        // Prefer skipping to the next item if available; otherwise, retry current
-        val shouldAutoSkip = dataStore.get(AutoSkipNextOnErrorKey, false)
-        val recoverableErrorCodes = setOf(
-            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
-            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
-            PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS,
-            PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND,
-            PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE,
-            PlaybackException.ERROR_CODE_REMOTE_ERROR,
-            PlaybackException.ERROR_CODE_DECODING_FAILED,
-        )
+        val currentIndex = player.currentMediaItemIndex
+        val currentPosition = player.currentPosition
 
-        if ((shouldAutoSkip || error.errorCode in recoverableErrorCodes) && player.hasNextMediaItem()) {
-            player.seekToNext()
-            player.prepare()
-            player.playWhenReady = true
-            return
-        }
-
-        // Fallback: try to recover current item
         player.prepare()
+
+        if (currentIndex != C.INDEX_UNSET) {
+            player.seekTo(currentIndex, maxOf(0L, currentPosition))
+        }
         player.playWhenReady = true
     }
 
