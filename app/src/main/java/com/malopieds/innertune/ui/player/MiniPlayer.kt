@@ -96,17 +96,25 @@ private fun AnimatedProgressBar(
             .padding(bottom = 4.dp)
             .pointerInput(Unit) {
                 detectTapGestures { offset ->
-                    val percentage = offset.x / size.width
-                    val newPosition = (playerConnection.player.duration * percentage).toLong()
-                    playerConnection.player.seekTo(newPosition)
+                    val total = playerConnection.player.duration
+                    if (total <= 0 || total == androidx.media3.common.C.TIME_UNSET) return@detectTapGestures
+                    val percentage = (offset.x / size.width).coerceIn(0f, 1f)
+                    val newPosition = (total * percentage).toLong()
+                    try {
+                        playerConnection.player.seekTo(newPosition)
+                    } catch (_: Throwable) {}
                 }
             }
             .pointerInput(Unit) {
                 detectHorizontalDragGestures { change, dragAmount ->
                     change.consume()
+                    val total = playerConnection.player.duration
+                    if (total <= 0 || total == androidx.media3.common.C.TIME_UNSET) return@detectHorizontalDragGestures
                     val percentage = (change.position.x / size.width).coerceIn(0f, 1f)
-                    val newPosition = (playerConnection.player.duration * percentage).toLong()
-                    playerConnection.player.seekTo(newPosition)
+                    val newPosition = (total * percentage).toLong()
+                    try {
+                        playerConnection.player.seekTo(newPosition)
+                    } catch (_: Throwable) {}
                 }
             }
     ) {

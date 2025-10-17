@@ -830,7 +830,14 @@ fun BottomSheetPlayer(
             PlayerProgressBar(
                 playerConnection = playerConnection,
                 duration = duration,
-                onSeek = { playerConnection.player.seekTo(it) },
+                onSeek = {
+                    val total = playerConnection.player.duration
+                    if (total > 0 && total != androidx.media3.common.C.TIME_UNSET) {
+                        try {
+                            playerConnection.player.seekTo(it)
+                        } catch (_: Throwable) {}
+                    }
+                },
                 sliderStyle = sliderStyle,
                 onBackgroundColor = onBackgroundColor
             )

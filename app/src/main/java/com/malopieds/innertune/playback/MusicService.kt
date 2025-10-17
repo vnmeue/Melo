@@ -714,77 +714,83 @@ class MusicService :
     private fun createDataSourceFactory(): DataSource.Factory {
         val songUrlCache = HashMap<String, Pair<String, Long>>()
         return ResolvingDataSource.Factory(createCacheDataSource()) { dataSpec ->
-            val mediaId = dataSpec.key ?: error("No media id")
+            try {
+                val mediaId = dataSpec.key ?: error("No media id")
 
-            if (downloadCache.isCached(mediaId, dataSpec.position, if (dataSpec.length >= 0) dataSpec.length else 1) ||
-                playerCache.isCached(mediaId, dataSpec.position, CHUNK_LENGTH)
-            ) {
-                scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
-                return@Factory dataSpec
-            }
-
-            songUrlCache[mediaId]?.takeIf { it.second < System.currentTimeMillis() }?.let {
-                scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
-                return@Factory dataSpec.withUri(it.first.toUri())
-            }
-
-            // Check whether format exists so that users from older version can view format details
-            // There may be inconsistent between the downloaded file and the displayed info if user change audio quality frequently
-            val playedFormat = runBlocking(Dispatchers.IO) { database.format(mediaId).first() }
-            val playerResponse =
-                runBlocking(Dispatchers.IO) {
-                    YTPlayerUtils.playerResponseForPlayback(
-                        mediaId,
-                        playedFormat = playedFormat,
-                        audioQuality = audioQuality,
-                        connectivityManager = connectivityManager,
-                    )
-                }.getOrElse { throwable ->
-                    when (throwable) {
-                        is ConnectException, is UnknownHostException -> {
-                            throw PlaybackException(
-                                getString(R.string.error_no_internet),
-                                throwable,
-                                PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
-                            )
-                        }
-
-                        is SocketTimeoutException -> {
-                            throw PlaybackException(
-                                getString(R.string.error_timeout),
-                                throwable,
-                                PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
-                            )
-                        }
-
-                        else -> throw PlaybackException(
-                            getString(R.string.error_unknown),
-                            throwable,
-                            PlaybackException.ERROR_CODE_REMOTE_ERROR,
-                        )
-                    }
+                if (downloadCache.isCached(mediaId, dataSpec.position, if (dataSpec.length >= 0) dataSpec.length else 1) ||
+                    playerCache.isCached(mediaId, dataSpec.position, CHUNK_LENGTH)
+                ) {
+                    scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
+                    return@Factory dataSpec
                 }
-            val format = playerResponse.format
 
-            database.query {
-                upsert(
-                    FormatEntity(
-                        id = mediaId,
-                        itag = format.itag,
-                        mimeType = format.mimeType.split(";")[0],
-                        codecs = format.mimeType.split("codecs=")[1].removeSurrounding("\""),
-                        bitrate = format.bitrate,
-                        sampleRate = format.audioSampleRate,
-                        contentLength = format.contentLength!!,
-                        loudnessDb = playerResponse.audioConfig?.loudnessDb,
-                    ),
-                )
+                songUrlCache[mediaId]?.takeIf { it.second > System.currentTimeMillis() }?.let {
+                    // Use cached, not-expired URL immediately for faster start
+                    return@Factory dataSpec.withUri(it.first.toUri())
+                }
+
+                // Check whether format exists so that users from older version can view format details
+                // There may be inconsistent between the downloaded file and the displayed info if user change audio quality frequently
+                val playedFormat = runBlocking(Dispatchers.IO) { database.format(mediaId).first() }
+                val playerResponse =
+                    runBlocking(Dispatchers.IO) {
+                        YTPlayerUtils.playerResponseForPlayback(
+                            mediaId,
+                            playedFormat = playedFormat,
+                            audioQuality = audioQuality,
+                            connectivityManager = connectivityManager,
+                        )
+                    }.getOrElse { throwable ->
+                        when (throwable) {
+                            is ConnectException, is UnknownHostException -> {
+                                throw PlaybackException(
+                                    getString(R.string.error_no_internet),
+                                    throwable,
+                                    PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
+                                )
+                            }
+
+                            is SocketTimeoutException -> {
+                                throw PlaybackException(
+                                    getString(R.string.error_timeout),
+                                    throwable,
+                                    PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
+                                )
+                            }
+
+                            else -> throw PlaybackException(
+                                getString(R.string.error_unknown),
+                                throwable,
+                                PlaybackException.ERROR_CODE_REMOTE_ERROR,
+                            )
+                        }
+                    }
+                val format = playerResponse.format
+
+                database.query {
+                    upsert(
+                        FormatEntity(
+                            id = mediaId,
+                            itag = format.itag,
+                            mimeType = format.mimeType.split(";")[0],
+                            codecs = format.mimeType.split("codecs=")[1].removeSurrounding("\""),
+                            bitrate = format.bitrate,
+                            sampleRate = format.audioSampleRate,
+                            contentLength = format.contentLength!!,
+                            loudnessDb = playerResponse.audioConfig?.loudnessDb,
+                        ),
+                    )
+                }
+                scope.launch(Dispatchers.IO) { recoverSong(mediaId, playerResponse) }
+                val streamURL = playerResponse.streamUrl
+                val expirationTime = System.currentTimeMillis() + playerResponse.streamExpiresInSeconds * 1000L
+                songUrlCache[mediaId] = streamURL to expirationTime
+                dataSpec.withUri(streamURL.toUri()).subrange(dataSpec.uriPositionOffset, CHUNK_LENGTH)
+            } catch (t: Throwable) {
+                // Fail-safe: never crash on refresh failures; report and continue with original spec
+                reportException(t)
+                dataSpec
             }
-            scope.launch(Dispatchers.IO) { recoverSong(mediaId, playerResponse) }
-            val streamURL = playerResponse.streamUrl
-            val expirationTime = System.currentTimeMillis() + playerResponse.streamExpiresInSeconds * 1000L
-            songUrlCache[mediaId] = streamURL to expirationTime
-            dataSpec.withUri(streamURL.toUri()).subrange(dataSpec.uriPositionOffset, CHUNK_LENGTH)
         }
     }
 

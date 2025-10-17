@@ -77,6 +77,7 @@ object YTPlayerUtils {
         var streamExpiresInSeconds: Int? = null
         var streamPlayerResponse: PlayerResponse? = null
 
+        // Try main client first, then fallback clients, without extra HEAD validation for speed
         for (clientIndex in (-1 until STREAM_FALLBACK_CLIENTS.size)) {
             streamPlayerResponse =
                 when (clientIndex) {
@@ -102,12 +103,8 @@ object YTPlayerUtils {
             streamUrl = findUrlOrNull(format, videoId) ?: continue
             streamExpiresInSeconds = streamPlayerResponse.streamingData?.expiresInSeconds ?: continue
 
-            when (clientIndex) {
-                STREAM_FALLBACK_CLIENTS.size - 1 -> continue /** skip [validateStatus] for last client */
-                else -> {
-                    if (validateStatus(streamUrl)) break  // Found a working stream
-                }
-            }
+            // Accept the first candidate stream; rely on player error handling to recover if needed
+            break
         }
 
         if (streamPlayerResponse == null) throw Exception("Bad stream player response")
