@@ -117,6 +117,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -151,6 +152,9 @@ class MusicService :
 
     @Inject
     lateinit var mediaLibrarySessionCallback: MediaLibrarySessionCallback
+
+    @Inject
+    lateinit var downloadUtil: DownloadUtil
 
     private var scope = CoroutineScope(Dispatchers.Main) + Job()
     private val binder = MusicBinder()
@@ -464,15 +468,30 @@ class MusicService :
                 queueTitle = initialStatus.title
             }
             if (initialStatus.items.isEmpty()) return@launch
+            // === PREFETCH WHOLE SONG: new logic ===
+            val mainItem = initialStatus.items[initialStatus.mediaItemIndex]
+            val mediaId = mainItem.mediaId
+            // Fetch length from database
+            val format = database.format(mediaId).firstOrNull()
+            val contentLength = format?.contentLength?.toLong() ?: 0L
+            if (contentLength > 0L) {
+                val success = withContext(Dispatchers.IO) {
+                    downloadUtil.prefetchWholeSong(mediaId, contentLength, 60000)
+                }
+                if (!success) {
+                    // Could not prefetch the song, show error and exit
+                    queueTitle = "Unable to fetch song (network/server issue)"
+                    return@launch
+                }
+            }
+            // === END PREFETCH ===
             if (queue.preloadItem != null) {
                 player.addMediaItems(0, initialStatus.items.subList(0, initialStatus.mediaItemIndex))
                 player.addMediaItems(initialStatus.items.subList(initialStatus.mediaItemIndex + 1, initialStatus.items.size))
             } else {
                 player.setMediaItems(
                     initialStatus.items,
-                    if (initialStatus.mediaItemIndex >
-                        0
-                    ) {
+                    if (initialStatus.mediaItemIndex > 0) {
                         initialStatus.mediaItemIndex
                     } else {
                         0

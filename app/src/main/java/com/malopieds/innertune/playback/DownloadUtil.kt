@@ -33,6 +33,8 @@ import okhttp3.OkHttpClient
 import java.util.concurrent.Executor
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.media3.datasource.DataSpec
+import androidx.media3.datasource.DataSourceInputStream
 
 @Singleton
 class DownloadUtil
@@ -146,4 +148,38 @@ class DownloadUtil
                 },
             )
         }
+
+    /**
+     * Prefetch an entire song into the playerCache before playback, in batches.
+     * Waits until the file is available or times out and returns false.
+     */
+    suspend fun prefetchWholeSong(mediaId: String, contentLength: Long, maxTimeoutMs: Long = 20000): Boolean {
+        val startTime = System.currentTimeMillis()
+        val chunkSize = 512 * 1024 // 512 KB per batch
+        var position = 0L
+        while (position < contentLength) {
+            val end = minOf(position + chunkSize - 1, contentLength - 1)
+            val dataSpec = DataSpec.Builder()
+                .setKey(mediaId)
+                .setPosition(position)
+                .setLength(end - position + 1)
+                .build()
+            val cacheDataSource = CacheDataSource.Factory()
+                .setCache(playerCache)
+                .setUpstreamDataSourceFactory(OkHttpDataSource.Factory(
+                    OkHttpClient.Builder().proxy(YouTube.proxy).build()
+                ))
+                .createDataSource()
+            val inputStream = DataSourceInputStream(cacheDataSource, dataSpec)
+            val buffer = ByteArray(32 * 1024) // 32KB
+            while (inputStream.read(buffer) != -1) { /* just read to fill the cache */ }
+            inputStream.close()
+            if (System.currentTimeMillis() - startTime > maxTimeoutMs) {
+                return false // Timeout
+            }
+            position = end + 1
+        }
+        // Check if fully cached
+        return playerCache.isCached(mediaId, 0, contentLength)
+    }
     }
